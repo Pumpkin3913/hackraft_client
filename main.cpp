@@ -3,17 +3,30 @@
 #include "tileset.h"
 #include "grid.h"
 #include "window.h"
+#include "socket.h"
 
 #include <SDL2/SDL.h>
 #include <thread>
+
+void sdl_loop(
+	class Sdl * sdl,
+	class Window * window,
+	class Grid ** grid,
+	class Tileset * tileset,
+	class Socket * socket);
+
+void from_server_loop(
+	class Socket * socket,
+	class Grid ** grid,
+	class LuaConfig * conf);
 
 int main() {
 	class LuaConfig conf = LuaConfig("conf.lua");
 	class Sdl sdl(
 			conf.get_int("screen_width"),
 			conf.get_int("screen_height"));
-	class Tileset * tileset = new Tileset(sdl,
-			conf.get_string("tileset_filename"),
+	class Tileset * tileset = new Tileset(&sdl,
+			std::string(conf.get_string("tileset_filename")),
 			conf.get_int("tileset_width"),
 			conf.get_int("tileset_height"));
 	class Grid * grid = NULL;
@@ -26,22 +39,30 @@ int main() {
 			conf.get_int("port"),
 			conf.get_string("address"));
 
-	sdl->set_icon(conf.get_string("icon"));
-	sdl->set_title(conf.get_string("title"));
+	sdl.set_icon(conf.get_string("icon"));
+	sdl.set_title(conf.get_string("title"));
 
-	std::thread * from_server_thread = new std::thread(from_server_loop, socket, &grid, conf);
-	std::thread * drawer = new std::thread(sdl_loop, sdl, window, &grid, tileset);
+	std::thread * from_server_thread =
+		new std::thread(from_server_loop, socket, &grid, &conf);
+	std::thread * drawer =
+		new std::thread(sdl_loop, &sdl, window, &grid, tileset, socket);
 
 	from_server_thread->join();
-	delete(sdl_thread);
+	delete(drawer);
 
 	delete(socket);
 }
 
-void sdl_loop(class Sdl * sdl, class Window * window, class Grid ** grid, class Tileset * tileset) {
+void sdl_loop(
+	class Sdl * sdl,
+	class Window * window,
+	class Grid ** grid,
+	class Tileset * tileset,
+	class Socket * socket
+) {
 	while(true) {
 		if(*grid) {
-			window->draw(sdl, grid, tileset);
+			window->draw(sdl, *grid, tileset);
 		}
 		sdl->next_frame();
 		if(sdl->keydown(SDL_SCANCODE_UP)) {
@@ -63,7 +84,11 @@ void sdl_loop(class Sdl * sdl, class Window * window, class Grid ** grid, class 
 	}
 }
 
-void from_server_loop(class Socket * socket, class Grid ** grid, class LuaConfig * conf) {
+void from_server_loop(
+	class Socket * socket,
+	class Grid ** grid,
+	class LuaConfig * conf
+) {
 	bool stop = false;
 	while(not stop) {
 		std::string input;
@@ -97,20 +122,20 @@ void from_server_loop(class Socket * socket, class Grid ** grid, class LuaConfig
 						delete(*grid);
 					}
 					*grid = new Grid(w, h,
-							conf.get_int("tileset_width"),
-							conf.get_int("tileset_height"));
+							conf->get_int("tileset_width"),
+							conf->get_int("tileset_height"));
 					std::vector<int> tiles_list;
 					std::size_t begin = 0;
 					std::size_t end = tiles.find_first_of(',');
 					while(end != std::string::npos) {
 						tiles_list.push_back(std::stoi(tiles.substr(begin, end)));
 						begin = end;
-						end = tile.find_first_of(',', begin);
+						end = tiles.find_first_of(',', begin);
 					}
 					tiles_list.push_back(std::stoi(tiles.substr(begin))); // last.
 					for(int x=0; x<w; x++) {
 						for(int y=0; y<h; y++) {
-							*grid->set(x, y, tiles_list.at(y*w+x));
+							(*grid)->set(x, y, tiles_list.at(y*w+x));
 						}
 					}
 					// TODO : unlock
