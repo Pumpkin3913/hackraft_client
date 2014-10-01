@@ -15,6 +15,8 @@ class Socket {
 		~Socket();
 		void send(std::string message);
 		std::string receive();
+		inline char getchar();
+		std::string getline();
 		bool isOk();
 		std::string getError();
 };

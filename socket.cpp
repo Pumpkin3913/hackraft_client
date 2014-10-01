@@ -59,6 +59,29 @@ std::string Socket::receive() {
 	}
 }
 
+inline char Socket::getchar() {
+	char c;
+	int flag;
+	flag = read(this->fd, &c, 1);
+	if(flag != 1) {
+		if(errno) {
+			this->error = std::string("Reading from socket: ")+strerror(errno);
+			this->ok = false;
+		}
+		return((char)0);
+	}
+	return(c);
+}
+
+std::string Socket::getline() {
+	char c;
+	std::string str = "";
+	while((c = this->getchar()) != '\n') {
+		str += c;
+	}
+	return(str);
+}
+
 bool Socket::isOk() {
 	return(this->ok);
 }

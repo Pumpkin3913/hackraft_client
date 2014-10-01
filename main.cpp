@@ -7,29 +7,46 @@
 
 #include <SDL2/SDL.h>
 #include <thread>
+#include <string>
+#include <vector>
+
+#ifdef DEBUG
+#include <iostream>
+#endif
+
+std::vector<std::string> split(std::string input, char delim) {
+	std::vector<std::string> output;
+	int begin = 0;
+	int end = 0;
+	while((end = input.find(delim, begin)) != std::string::npos) {
+		output.push_back(input.substr(begin, end - begin));
+		begin = end+1;
+	}
+	output.push_back(input.substr(begin)); // TODO
+	return(output);
+}
 
 void sdl_loop(
 	class Sdl * sdl,
 	class Window * window,
-	class Grid ** grid,
 	class Tileset * tileset,
 	class Socket * socket);
 
 void from_server_loop(
 	class Socket * socket,
-	class Grid ** grid,
 	class LuaConfig * conf);
+
+class Grid * grid = NULL;
 
 int main() {
 	class LuaConfig conf = LuaConfig("conf.lua");
-	class Sdl sdl(
+	class Sdl * sdl = new Sdl(
 			conf.get_int("screen_width"),
 			conf.get_int("screen_height"));
-	class Tileset * tileset = new Tileset(&sdl,
+	class Tileset * tileset = new Tileset(sdl,
 			std::string(conf.get_string("tileset_filename")),
 			conf.get_int("tileset_width"),
 			conf.get_int("tileset_height"));
-	class Grid * grid = NULL;
 	class Window * window = new Window(
 			conf.get_int("screen_width") / conf.get_int("tileset_width"),
 			conf.get_int("screen_height") / conf.get_int("tileset_height"),
@@ -39,30 +56,38 @@ int main() {
 			conf.get_int("port"),
 			conf.get_string("address"));
 
-	sdl.set_icon(conf.get_string("icon"));
-	sdl.set_title(conf.get_string("title"));
+	try {
+		sdl->set_icon(conf.get_string("icon"));
+	} catch(...) { }
+	try {
+		sdl->set_title(conf.get_string("title"));
+	} catch(...) { }
 
 	std::thread * from_server_thread =
-		new std::thread(from_server_loop, socket, &grid, &conf);
+		new std::thread(from_server_loop, socket, &conf);
 	std::thread * drawer =
-		new std::thread(sdl_loop, &sdl, window, &grid, tileset, socket);
+		new std::thread(sdl_loop, sdl, window, tileset, socket);
 
 	from_server_thread->join();
 	delete(drawer);
-
 	delete(socket);
+	delete(window);
+	if(grid) {
+		delete(grid);
+	}
+	delete(tileset);
+	delete(sdl);
 }
 
 void sdl_loop(
 	class Sdl * sdl,
 	class Window * window,
-	class Grid ** grid,
 	class Tileset * tileset,
 	class Socket * socket
 ) {
 	while(true) {
-		if(*grid) {
-			window->draw(sdl, *grid, tileset);
+		if(grid) {
+			window->draw(sdl, grid, tileset);
 		}
 		sdl->next_frame();
 		if(sdl->keydown(SDL_SCANCODE_UP)) {
@@ -78,73 +103,75 @@ void sdl_loop(
 			socket->send("move west\n");
 		}
 		if(sdl->keydown(SDL_SCANCODE_ESCAPE)) {
-			socket->send("exit\n"); // XXX Rather "quit", isn't it?
+			socket->send("quit\n");
 		}
 // TODO : say.
 	}
 }
 
+// TODO : URGENT : catch sigterm and sdl exit event.
+
 void from_server_loop(
 	class Socket * socket,
-	class Grid ** grid,
 	class LuaConfig * conf
 ) {
 	bool stop = false;
 	while(not stop) {
-		std::string input;
-		// try { // XXX
-			input = socket->receive();
-		/* XXX //
-		} catch {
-			break;
-		}
-		// XXX */
-		std::size_t separator = input.find_first_of(' ');
-		if(separator != std::string::npos) {
-			std::string cmd = input.substr(0, separator);
-			std::string arg = input.substr(separator+1);
-			if(cmd == "move") {
-				int player_id, x, y;
-				sscanf(arg.c_str(), "%d %d %d", &player_id, &x, &y);
+		std::string input = socket->getline();
+		std::vector<std::string> tokens = split(input, ' ');
+		if(tokens.size() >= 1) {
+			if(tokens[0] == "move") {
+				// int player_id, x, y;
 				// TODO : move or create player.
-			} else if(cmd == "exit") {
-				int player_id = std::stoi(arg);
-				// TODO : remove player.
-			} else if(cmd == "floor") {
-				separator = arg.find_first_of(' ');
-				if(separator != std::string::npos) {
+			} else if(tokens[0] == "exit") {
+				// int player_id;
+				// TODO : move or create player.
+			} else if(tokens[0] == "floor") {
+				if(tokens.size() >= 4) {
 					int w, h;
-					std::string name = arg.substr(0, separator);
-					sscanf(arg.substr(separator+1).c_str(), "%d %d", &w, &h);
-					std::string tiles = socket->receive();
+					std::string name;
+					w = std::stoi(tokens[1]);
+					h = std::stoi(tokens[2]);
+					name = tokens[3];
+#ifdef DEBUG
+					std::cout << "DEBUG: new floor ; w="<<w<<" ; h="<<h << std::endl;
+#endif
 					// TODO : lock
-					if(*grid != NULL) {
-						delete(*grid);
+					if(grid != NULL) {
+						delete(grid);
 					}
-					*grid = new Grid(w, h,
+					grid = new Grid(w, h,
 							conf->get_int("tileset_width"),
 							conf->get_int("tileset_height"));
-					std::vector<int> tiles_list;
-					std::size_t begin = 0;
-					std::size_t end = tiles.find_first_of(',');
-					while(end != std::string::npos) {
-						tiles_list.push_back(std::stoi(tiles.substr(begin, end)));
-						begin = end;
-						end = tiles.find_first_of(',', begin);
-					}
-					tiles_list.push_back(std::stoi(tiles.substr(begin))); // last.
-					for(int x=0; x<w; x++) {
-						for(int y=0; y<h; y++) {
-							(*grid)->set(x, y, tiles_list.at(y*w+x));
+					input = socket->getline();
+					tokens = split(input, ',');
+					if(tokens.size() == w*h) {
+						for(int x=0; x<w; x++) {
+							for(int y=0; y<h; y++) {
+								grid->set(x, y, std::stoi(tokens.at(y*w+x)));
+							}
 						}
 					}
+#ifdef DEBUG
+					else {
+						std::cout << "DEBUG: provided "<<tokens.size()<<" tiles while expecting "<<w*h<<std::endl;
+					}
+#endif
 					// TODO : unlock
 				}
-			} else if(cmd == "EOF") {
+#ifdef DEBUG
+				else {
+					std::cout << "DEBUG: 'floor' arg's size is "<<tokens.size()<<", expecting 4 args." << std::endl;
+				}
+#endif
+			} else if(tokens[0] == "EOF") {
 				stop = true;
 			} else {
+				// unrecognized command.
 			}
+		} else {
+			// empty line.
 		}
-	}
+	} // end of while.
 }
 
