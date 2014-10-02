@@ -9,10 +9,33 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <map>
 
 #ifdef DEBUG
 #include <iostream>
 #endif
+
+struct Player {
+	int id;
+	int aspect;
+	int x;
+	int y;
+	Player(int id, int aspect, int x, int y) :
+		id(id), aspect(aspect), x(x), y(y) { }
+};
+
+void sdl_loop(
+	class Sdl * sdl,
+	class Tileset * tileset,
+	class Socket * socket);
+
+void from_server_loop(
+	class Socket * socket,
+	class LuaConfig * conf);
+
+class Grid * g_grid = NULL;
+std::map<int, struct Player> * g_players = NULL;
+class Window * g_window = NULL;
 
 std::vector<std::string> split(std::string input, char delim) {
 	std::vector<std::string> output;
@@ -22,21 +45,9 @@ std::vector<std::string> split(std::string input, char delim) {
 		output.push_back(input.substr(begin, end - begin));
 		begin = end+1;
 	}
-	output.push_back(input.substr(begin)); // TODO
+	output.push_back(input.substr(begin));
 	return(output);
 }
-
-void sdl_loop(
-	class Sdl * sdl,
-	class Window * window,
-	class Tileset * tileset,
-	class Socket * socket);
-
-void from_server_loop(
-	class Socket * socket,
-	class LuaConfig * conf);
-
-class Grid * grid = NULL;
 
 int main() {
 	class LuaConfig conf = LuaConfig("conf.lua");
@@ -47,14 +58,14 @@ int main() {
 			std::string(conf.get_string("tileset_filename")),
 			conf.get_int("tileset_width"),
 			conf.get_int("tileset_height"));
-	class Window * window = new Window(
+	class Socket * socket = new Socket(
+			conf.get_int("port"),
+			conf.get_string("address"));
+	g_window = new Window(
 			conf.get_int("screen_width") / conf.get_int("tileset_width"),
 			conf.get_int("screen_height") / conf.get_int("tileset_height"),
 			conf.get_int("tileset_width"),
 			conf.get_int("tileset_height"));
-	class Socket * socket = new Socket(
-			conf.get_int("port"),
-			conf.get_string("address"));
 
 	try {
 		sdl->set_icon(conf.get_string("icon"));
@@ -66,28 +77,31 @@ int main() {
 	std::thread * from_server_thread =
 		new std::thread(from_server_loop, socket, &conf);
 	std::thread * drawer =
-		new std::thread(sdl_loop, sdl, window, tileset, socket);
+		new std::thread(sdl_loop, sdl, tileset, socket);
 
 	from_server_thread->join();
 	delete(drawer);
 	delete(socket);
-	delete(window);
-	if(grid) {
-		delete(grid);
-	}
+	delete(g_window);
+	if(g_grid) delete(g_grid);
+	if(g_players) delete(g_players);
 	delete(tileset);
 	delete(sdl);
 }
 
 void sdl_loop(
 	class Sdl * sdl,
-	class Window * window,
 	class Tileset * tileset,
 	class Socket * socket
 ) {
 	while(true) {
-		if(grid) {
-			window->draw(sdl, grid, tileset);
+		if(g_grid) {
+			g_window->draw(sdl, g_grid, tileset);
+			if(g_players && not sdl->key(SDL_SCANCODE_LSHIFT)) {
+				for(std::pair<int, struct Player> it : *g_players) {
+					g_window->draw(sdl, it.second.aspect, tileset, it.second.x, it.second.y);
+				}
+			}
 		}
 		sdl->next_frame();
 		if(sdl->keydown(SDL_SCANCODE_UP)) {
@@ -97,10 +111,10 @@ void sdl_loop(
 			socket->send("move south\n");
 		}
 		if(sdl->keydown(SDL_SCANCODE_LEFT)) {
-			socket->send("move east\n");
+			socket->send("move west\n");
 		}
 		if(sdl->keydown(SDL_SCANCODE_RIGHT)) {
-			socket->send("move west\n");
+			socket->send("move east\n");
 		}
 		if(sdl->keydown(SDL_SCANCODE_ESCAPE)) {
 			socket->send("quit\n");
@@ -109,23 +123,49 @@ void sdl_loop(
 	}
 }
 
-// TODO : URGENT : catch sigterm and sdl exit event.
+// TODO : catch sigterm and sdl exit event.
 
 void from_server_loop(
 	class Socket * socket,
 	class LuaConfig * conf
 ) {
 	bool stop = false;
+	int follow_id = 0;
 	while(not stop) {
 		std::string input = socket->getline();
 		std::vector<std::string> tokens = split(input, ' ');
 		if(tokens.size() >= 1) {
 			if(tokens[0] == "move") {
-				// int player_id, x, y;
-				// TODO : move or create player.
+				if(tokens.size() >= 5 && g_players) {
+					int id = std::stoi(tokens[1]);
+					int aspect = std::stoi(tokens[2]);
+					int x = std::stoi(tokens[3]);
+					int y = std::stoi(tokens[4]);
+					try {
+						g_players->at(id).aspect = aspect;
+						g_players->at(id).x = x;
+						g_players->at(id).y = y;
+					} catch(...) {
+						g_players->insert(std::pair<int, struct Player>(id, Player(id, aspect, x, y)));
+					}
+					if(id == follow_id) {
+						g_window->set_center(x, y);
+					}
+				}
 			} else if(tokens[0] == "exit") {
-				// int player_id;
-				// TODO : move or create player.
+				if(tokens.size() >= 2 && g_players) {
+					int id = std::stoi(tokens[1]);
+					g_players->erase(id);
+				}
+			} else if(tokens[0] == "follow") {
+				if(tokens.size() >= 2) {
+					follow_id = std::stoi(tokens[1]);
+					try {
+						int x = g_players->at(follow_id).x;
+						int y = g_players->at(follow_id).y;
+						g_window->set_center(x, y);
+					} catch(...) { }
+				}
 			} else if(tokens[0] == "floor") {
 				if(tokens.size() >= 4) {
 					int w, h;
@@ -136,34 +176,26 @@ void from_server_loop(
 #ifdef DEBUG
 					std::cout << "DEBUG: new floor ; w="<<w<<" ; h="<<h << std::endl;
 #endif
+					if(g_players) delete(g_players);
+					g_players = new std::map<int, struct Player>();
+
 					// TODO : lock
-					if(grid != NULL) {
-						delete(grid);
-					}
-					grid = new Grid(w, h,
+					if(g_grid) delete(g_grid);
+					g_grid = new Grid(w, h,
 							conf->get_int("tileset_width"),
 							conf->get_int("tileset_height"));
+
 					input = socket->getline();
 					tokens = split(input, ',');
 					if(tokens.size() == w*h) {
 						for(int x=0; x<w; x++) {
 							for(int y=0; y<h; y++) {
-								grid->set(x, y, std::stoi(tokens.at(y*w+x)));
+								g_grid->set(x, y, std::stoi(tokens.at(y*w+x)));
 							}
 						}
 					}
-#ifdef DEBUG
-					else {
-						std::cout << "DEBUG: provided "<<tokens.size()<<" tiles while expecting "<<w*h<<std::endl;
-					}
-#endif
 					// TODO : unlock
 				}
-#ifdef DEBUG
-				else {
-					std::cout << "DEBUG: 'floor' arg's size is "<<tokens.size()<<", expecting 4 args." << std::endl;
-				}
-#endif
 			} else if(tokens[0] == "EOF") {
 				stop = true;
 			} else {

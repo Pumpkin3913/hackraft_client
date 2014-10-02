@@ -4,6 +4,7 @@
 class Sdl;
 class Grid;
 class Tileset;
+class Sprite;
 
 class Window {
 	private:
@@ -27,7 +28,9 @@ class Window {
 			int y_center = 0 // tiles
 		);
 		void set_center(int x_center, int y_center);
-		void draw(class Sdl * sdl, class Grid * grid, class Tileset * tileset);
+		void draw(class Sdl * sdl, class Grid * grid, class Tileset * ts);
+		void draw(class Sdl * sdl, class Sprite * sprite, int x, int y);
+		void draw(class Sdl * sdl, int id, class Tileset * ts, int x, int y);
 };
 
 #endif

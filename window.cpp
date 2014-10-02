@@ -31,7 +31,7 @@ void Window::set_center(int x_center, int y_center) {
 	this->y_center = y_center;
 }
 
-void Window::draw(class Sdl * sdl, class Grid * grid, class Tileset * tileset) {
+void Window::draw(class Sdl * sdl, class Grid * grid, class Tileset * ts) {
 	class Sprite * sprite;
 
 	int top = this->y_center - this->height/2;
@@ -42,12 +42,27 @@ void Window::draw(class Sdl * sdl, class Grid * grid, class Tileset * tileset) {
 	for(int y = top ; y < bot; y++) {
 		for(int x = left; x < right; x++) {
 			if(x>=0 && x<grid->get_width() && y>=0 && y<grid->get_height()) {
-				sprite = grid->get(x, y, tileset);
+				sprite = grid->get(x, y, ts);
+				/* XXX //
 				sprite->draw(sdl,
 					(x-left)*this->tile_width + this->x_shift,
 					(y-top)*this->tile_height + this->y_shift);
+				// XXX */
+				this->draw(sdl, sprite, x, y);
 			}
 		}
 	}
+}
+
+void Window::draw(class Sdl * sdl, class Sprite * sprite, int x, int y) {
+	int top = this->y_center - this->height/2;
+	int left = this->x_center - this->width/2;
+	sprite->draw(sdl,
+		(x-left)*this->tile_width + this->x_shift,
+		(y-top)*this->tile_height + this->y_shift);
+}
+
+void Window::draw(class Sdl * sdl, int id, class Tileset * ts, int x, int y) {
+	this->draw(sdl, ts->get(id), x, y);
 }
 
