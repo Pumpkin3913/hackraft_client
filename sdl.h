@@ -19,6 +19,7 @@ private:
 	unsigned int height;
 
 	std::list<SDL_Scancode> scancodes;
+	std::string text_input;
 	std::map<std::string, class Sprite *> sprites;
 
 	Sdl(const class Sdl&) = delete;
@@ -39,6 +40,7 @@ public:
 	void next_frame();
 	bool key(SDL_Scancode key);
 	bool keydown(SDL_Scancode key);
+	std::string get_text();
 	void load_sprite(std::string sprite_name, std::string file_name);
 	void load_sprite(std::string sprite_name, class Sprite * sprite);
 	class Sprite * get_sprite(std::string name);

@@ -25,6 +25,7 @@ class TextRenderer {
 		);
 		~TextRenderer();
 		class Sprite * render(class Sdl * sdl, std::string message);
+		unsigned int lineskip();
 };
 
 #endif //TEXTRENDERER_H

@@ -4,12 +4,17 @@
 #include "grid.h"
 #include "window.h"
 #include "socket.h"
+#include "textrenderer.h"
+#include "console.h"
+#include "textarea.h"
 
 #include <SDL2/SDL.h>
 #include <thread>
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
+#include <mutex>
 
 #ifdef DEBUG
 #include <iostream>
@@ -27,15 +32,22 @@ struct Player {
 void sdl_loop(
 	class Sdl * sdl,
 	class Tileset * tileset,
-	class Socket * socket);
+	class Socket * socket,
+	class TextArea * textarea,
+	class Console * console,
+	class TextRenderer * font);
 
 void from_server_loop(
-	class Socket * socket,
-	class LuaConfig * conf);
+	class Sdl * sdl,
+	class Socket * socket);
 
 class Grid * g_grid = NULL;
 std::map<int, struct Player> * g_players = NULL;
 class Window * g_window = NULL;
+std::mutex g_mutex;
+int g_tileset_width;
+int g_tileset_height;
+std::list<std::string> g_to_console;
 
 std::vector<std::string> split(std::string input, char delim) {
 	std::vector<std::string> output;
@@ -50,60 +62,111 @@ std::vector<std::string> split(std::string input, char delim) {
 }
 
 int main() {
-	class LuaConfig conf = LuaConfig("conf.lua");
+	class LuaConfig * conf = new LuaConfig("conf.lua");
 	class Sdl * sdl = new Sdl(
-			conf.get_int("screen_width"),
-			conf.get_int("screen_height"));
+			conf->get_int("screen_width"),
+			conf->get_int("screen_height"));
 	class Tileset * tileset = new Tileset(sdl,
-			std::string(conf.get_string("tileset_filename")),
-			conf.get_int("tileset_width"),
-			conf.get_int("tileset_height"));
+			std::string(conf->get_string("tileset_filename")),
+			conf->get_int("tileset_width"),
+			conf->get_int("tileset_height"));
 	class Socket * socket = new Socket(
-			conf.get_int("port"),
-			conf.get_string("address"));
+			conf->get_int("port"),
+			conf->get_string("address"));
+	class TextRenderer * font = new TextRenderer(
+			sdl,
+			conf->get_string("font_filename"),
+			conf->get_int("font_height"),
+			conf->get_int("font_red"),
+			conf->get_int("font_green"),
+			conf->get_int("font_blue"));
+	class Console * console = new Console(
+			font,
+			conf->get_int("screen_width"),
+			conf->get_int("console_height")*font->lineskip(),
+			0, // x_shift
+			conf->get_int("screen_height") // y_shift
+				- conf->get_int("console_height")*font->lineskip()
+				- conf->get_int("textarea_height")*font->lineskip()
+			);
+	class TextArea * textarea = new TextArea(
+			font,
+			conf->get_int("screen_width"),
+			conf->get_int("textarea_height")*font->lineskip(),
+			0, // x_shift
+			conf->get_int("screen_height") // y_shift
+				- conf->get_int("textarea_height")*font->lineskip()
+			);
 	g_window = new Window(
-			conf.get_int("screen_width") / conf.get_int("tileset_width"),
-			conf.get_int("screen_height") / conf.get_int("tileset_height"),
-			conf.get_int("tileset_width"),
-			conf.get_int("tileset_height"));
+			conf->get_int("screen_width") / conf->get_int("tileset_width"),
+			(conf->get_int("screen_height")
+				- conf->get_int("console_height")*font->lineskip()
+				- conf->get_int("textarea_height")*font->lineskip())
+					/ conf->get_int("tileset_height"),
+			conf->get_int("tileset_width"),
+			conf->get_int("tileset_height"));
 
-	try {
-		sdl->set_icon(conf.get_string("icon"));
-	} catch(...) { }
-	try {
-		sdl->set_title(conf.get_string("title"));
-	} catch(...) { }
+	g_tileset_width = conf->get_int("tileset_width");
+	g_tileset_height = conf->get_int("tileset_height");
+
+	if(conf->get_string("icon") != "") {
+		sdl->set_icon(conf->get_string("icon"));
+	}
+	if(conf->get_string("title") != "") {
+		sdl->set_title(conf->get_string("title"));
+	}
+
+	// delete(conf); // FIXME: It cause a double free error and I don't know why.
 
 	std::thread * from_server_thread =
-		new std::thread(from_server_loop, socket, &conf);
+		new std::thread(from_server_loop, sdl, socket);
 	std::thread * drawer =
-		new std::thread(sdl_loop, sdl, tileset, socket);
+		new std::thread(sdl_loop, sdl, tileset, socket, textarea, console, font);
 
 	from_server_thread->join();
+	drawer->detach();
 	delete(drawer);
 	delete(socket);
 	delete(g_window);
 	if(g_grid) delete(g_grid);
 	if(g_players) delete(g_players);
 	delete(tileset);
+	delete(console);
+	delete(textarea);
+	delete(font);
 	delete(sdl);
 }
 
 void sdl_loop(
 	class Sdl * sdl,
 	class Tileset * tileset,
-	class Socket * socket
+	class Socket * socket,
+	class TextArea * textarea,
+	class Console * console,
+	class TextRenderer * font
 ) {
+	g_mutex.lock();
 	while(true) {
+		while(not g_to_console.empty()) {
+			console->add_line(sdl, font, g_to_console.back());
+			g_to_console.pop_back();
+		}
+		console->draw(sdl);
+		textarea->draw(sdl);
 		if(g_grid) {
 			g_window->draw(sdl, g_grid, tileset);
-			if(g_players && not sdl->key(SDL_SCANCODE_LSHIFT)) {
+			if(g_players && not sdl->key(SDL_SCANCODE_LCTRL)) {
 				for(std::pair<int, struct Player> it : *g_players) {
 					g_window->draw(sdl, it.second.aspect, tileset, it.second.x, it.second.y);
 				}
 			}
 		}
+		g_mutex.unlock();
 		sdl->next_frame();
+		g_mutex.lock();
+		for(char c : sdl->get_text()) {
+			textarea->add_char(sdl, font, c);
+		}
 		if(sdl->keydown(SDL_SCANCODE_UP)) {
 			socket->send("move north\n");
 		}
@@ -116,24 +179,38 @@ void sdl_loop(
 		if(sdl->keydown(SDL_SCANCODE_RIGHT)) {
 			socket->send("move east\n");
 		}
+		if(sdl->keydown(SDL_SCANCODE_BACKSPACE)) {
+			textarea->pop_char();
+		}
+		if(sdl->keydown(SDL_SCANCODE_RETURN)) {
+			std::string input = textarea->get_text();
+			if(input.size() > 0) {
+				if(input[0] == '/') {
+					socket->send(input+'\n');
+				} else {
+					socket->send("say "+input+'\n');
+				}
+				textarea->clear();
+			}
+		}
 		if(sdl->keydown(SDL_SCANCODE_ESCAPE)) {
 			socket->send("quit\n");
 		}
-// TODO : say.
 	}
 }
 
-// TODO : catch sigterm and sdl exit event.
-
 void from_server_loop(
-	class Socket * socket,
-	class LuaConfig * conf
+	class Sdl * sdl,
+	class Socket * socket
 ) {
 	bool stop = false;
 	int follow_id = 0;
+	g_mutex.lock();
 	while(not stop) {
+		g_mutex.unlock();
 		std::string input = socket->getline();
 		std::vector<std::string> tokens = split(input, ' ');
+		g_mutex.lock();
 		if(tokens.size() >= 1) {
 			if(tokens[0] == "move") {
 				if(tokens.size() >= 5 && g_players) {
@@ -179,11 +256,8 @@ void from_server_loop(
 					if(g_players) delete(g_players);
 					g_players = new std::map<int, struct Player>();
 
-					// TODO : lock
 					if(g_grid) delete(g_grid);
-					g_grid = new Grid(w, h,
-							conf->get_int("tileset_width"),
-							conf->get_int("tileset_height"));
+					g_grid = new Grid(w, h, g_tileset_width, g_tileset_height);
 
 					input = socket->getline();
 					tokens = split(input, ',');
@@ -194,8 +268,14 @@ void from_server_loop(
 							}
 						}
 					}
-					// TODO : unlock
 				}
+			} else if(tokens[0] == "msg") {
+				std::string output = "";
+				for(int i=1; i<tokens.size(); i++) {
+					output += tokens[i] + ' ';
+				}
+				output.pop_back(); // remove trailing ' '.
+				g_to_console.push_front(output);
 			} else if(tokens[0] == "EOF") {
 				stop = true;
 			} else {

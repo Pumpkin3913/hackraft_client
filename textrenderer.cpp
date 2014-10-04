@@ -37,3 +37,7 @@ class Sprite * TextRenderer::render(class Sdl * sdl, std::string message) {
 	return(sprite);
 }
 
+unsigned int TextRenderer::lineskip() {
+	return(TTF_FontLineSkip(this->font));
+}
+

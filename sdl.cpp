@@ -20,6 +20,11 @@ Sdl::Sdl(unsigned int width, unsigned int height) :
 		this->error("Unable to init SDL");
 	}
 
+	// Initialize TTF.
+	if(TTF_Init()) {
+		this->error_ttf("Unable to init TTF");
+	}
+
 	// Create window.
 	window = SDL_CreateWindow(
 			NULL,
@@ -112,9 +117,12 @@ void Sdl::next_frame() {
 	SDL_Delay(10);
 
 	this->scancodes.clear();
+	this->text_input = "";
 	while(SDL_PollEvent(&event)) {
 		if(event.type == SDL_KEYDOWN) {
 			this->scancodes.push_back(event.key.keysym.scancode);
+		} else if(event.type == SDL_TEXTINPUT) {
+			this->text_input += event.text.text;
 		}
 	}
 }
@@ -134,6 +142,10 @@ bool Sdl::keydown(SDL_Scancode key) {
 		}
 	}
 	return(false);
+}
+
+std::string Sdl::get_text() {
+	return(this->text_input);
 }
 
 void Sdl::load_sprite(std::string sprite_name, std::string file_name) {
