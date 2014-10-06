@@ -6,10 +6,6 @@
 
 #include <vector>
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 Console::Console(
 	class TextRenderer * tr,
 	unsigned int width,
@@ -24,9 +20,6 @@ Console::Console(
 {
 	this->line_height = tr->lineskip();
 	this->max_line = this->height / this->line_height;
-#ifdef DEBUG
-	std::cout << "console max line is " << this->max_line << std::endl;
-#endif
 }
 
 Console::~Console() {
@@ -45,9 +38,6 @@ void Console::add(class Sprite * line) {
 void Console::add_line(class Sdl * sdl, class TextRenderer * tr, std::string text) {
 	if(text != "") {
 		// TODO : line split
-#ifdef DEBUG
-		std::cout << "Console adding line '" << text << "'" << std::endl;
-#endif
 		this->add(tr->render(sdl, text));
 	}
 }

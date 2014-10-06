@@ -9,11 +9,11 @@ port    = 31337
 screen_width  = 800
 screen_height = 600
 
-tileset_filename = "ascii.bmp"
+tileset_filename = "data/ascii.bmp"
 tileset_width    = 10
 tileset_height   = 10
 
-font_filename = "font.ttf"
+font_filename = "data/font.ttf"
 font_height   = 12
 font_red      = 255
 font_green    = 255

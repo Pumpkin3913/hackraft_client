@@ -16,10 +16,6 @@
 #include <list>
 #include <mutex>
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 struct Player {
 	int id;
 	int aspect;
@@ -250,9 +246,6 @@ void from_server_loop(
 					w = std::stoi(tokens[1]);
 					h = std::stoi(tokens[2]);
 					name = tokens[3];
-#ifdef DEBUG
-					std::cout << "DEBUG: new floor ; w="<<w<<" ; h="<<h << std::endl;
-#endif
 					if(g_players) delete(g_players);
 					g_players = new std::map<int, struct Player>();
 
@@ -276,6 +269,14 @@ void from_server_loop(
 				}
 				output.pop_back(); // remove trailing ' '.
 				g_to_console.push_front(output);
+			} else if(tokens[0] == "tilechange") {
+				if(tokens.size() >= 4) {
+					int aspect, x, y;
+					aspect = std::stoi(tokens[1]);
+					x = std::stoi(tokens[2]);
+					y = std::stoi(tokens[3]);
+					g_grid->set(x, y, aspect);
+				}
 			} else if(tokens[0] == "EOF") {
 				stop = true;
 			} else {
