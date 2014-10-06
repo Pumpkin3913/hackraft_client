@@ -164,16 +164,32 @@ void sdl_loop(
 			textarea->add_char(sdl, font, c);
 		}
 		if(sdl->keydown(SDL_SCANCODE_UP)) {
-			socket->send("move north\n");
+			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
+				textarea->add_string(sdl, font, " north");
+			} else {
+				socket->send("move north\n");
+			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_DOWN)) {
-			socket->send("move south\n");
+			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
+				textarea->add_string(sdl, font, " south");
+			} else {
+				socket->send("move south\n");
+			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_LEFT)) {
-			socket->send("move west\n");
+			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
+				textarea->add_string(sdl, font, " west");
+			} else {
+				socket->send("move west\n");
+			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_RIGHT)) {
-			socket->send("move east\n");
+			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
+				textarea->add_string(sdl, font, " east");
+			} else {
+				socket->send("move east\n");
+			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_BACKSPACE)) {
 			textarea->pop_char();

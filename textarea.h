@@ -26,6 +26,7 @@ class TextArea {
 			signed int y_shift = 0);
 		~TextArea();
 		void add_char(class Sdl * sdl, class TextRenderer * tr, char c);
+		void add_string(class Sdl * sdl, class TextRenderer * tr, std::string string);
 		void pop_char();
 		std::string get_text();
 		void clear();

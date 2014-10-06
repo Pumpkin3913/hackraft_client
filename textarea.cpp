@@ -30,6 +30,12 @@ void TextArea::add_char(class Sdl * sdl, class TextRenderer * tr, char c) {
 	this->text.push_back(c);
 }
 
+void TextArea::add_string(class Sdl * sdl, class TextRenderer * tr, std::string string) {
+	for(char c : string) {
+		this->add_char(sdl, tr, c);
+	}
+}
+
 void TextArea::pop_char() {
 	if(this->content.size() > 0) {
 		this->content.pop_back();
