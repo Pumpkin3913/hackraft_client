@@ -8,6 +8,7 @@ class Socket {
 		int fd;
 		bool ok;
 		std::string error;
+		std::string buffer;
 		Socket();
 	public:
 		Socket(short port, std::string address);
@@ -17,6 +18,7 @@ class Socket {
 		std::string receive();
 		inline char getchar();
 		std::string getline();
+		void setNonBlock();
 		bool isOk();
 		std::string getError();
 };

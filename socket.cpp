@@ -6,6 +6,7 @@
 #include <sys/socket.h> // socket(), bind(), listen()
 #include <netinet/in.h> // IPv4, IPv6
 #include <arpa/inet.h> // inet_ntoa()
+#include <fcntl.h>
 
 // TODO : keep ip and port data in private fields, implement public accessors.
 
@@ -75,11 +76,27 @@ inline char Socket::getchar() {
 
 std::string Socket::getline() {
 	char c;
-	std::string str = "";
-	while((c = this->getchar()) != '\n') {
-		str += c;
+	while(c = this->getchar(), c != '\n' && c != 0) {
+		this->buffer += c;
 	}
-	return(str);
+	if(c == '\n') {
+		std::string s = this->buffer;
+		this->buffer = "";
+		return(s);
+	} else {
+		return("");
+	}
+}
+
+void Socket::setNonBlock() {
+	int flags = fcntl(this->fd, F_GETFL, 0);
+	if(flags == -1) {
+		flags = 0;
+	}
+	int new_flags = flags | O_NONBLOCK;
+	flags = fcntl(this->fd, F_SETFL, new_flags);
+	if(flags == -1) {
+	}
 }
 
 bool Socket::isOk() {
