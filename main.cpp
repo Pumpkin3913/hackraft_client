@@ -7,6 +7,7 @@
 #include "textrenderer.h"
 #include "console.h"
 #include "textarea.h"
+#include "gauge.h"
 
 #include <SDL2/SDL.h>
 #include <string>
@@ -41,6 +42,7 @@ int main() {
 	std::string input;
 	std::vector<std::string> tokens;
 	std::map<int, struct Player> players;
+	std::map<std::string, class Gauge *> gauges;
 	class LuaConfig * conf = new LuaConfig("conf.lua");
 	class Sdl * sdl = new Sdl(
 			conf->get_int("screen_width"),
@@ -110,6 +112,13 @@ int main() {
 				for(std::pair<int, struct Player> it : players) {
 					window->draw(sdl, it.second.aspect, tileset, it.second.x, it.second.y);
 				}
+			}
+		}
+		{
+			int i = 0;
+			for(std::pair<std::string, class Gauge *> it : gauges) {
+				it.second->draw(sdl, 0, i);
+				i += it.second->getHeight();
 			}
 		}
 		sdl->next_frame();
@@ -243,6 +252,36 @@ int main() {
 					x = std::stoi(tokens[2]);
 					y = std::stoi(tokens[3]);
 					grid->set(x, y, aspect);
+				}
+			} else if(tokens[0] == "gauge") {
+				if(tokens.size() >= 6) {
+					std::string name = tokens[1];
+					int val = std::stoi(tokens[2]);
+					int max = std::stoi(tokens[3]);
+					int full = std::stoi(tokens[4]);
+					int empty = std::stoi(tokens[5]);
+					try {
+						// Gauge already exists: update.
+						gauges.at(name)->set(val, max);
+						gauges.at(name)->setAspect(
+								tileset->get(full), tileset->get(empty));
+					} catch(...) {
+						// Gauge doesn't exist: add new.
+						class Gauge * gauge = new Gauge(
+								sdl, font, name,
+								tileset->get(full), tileset->get(empty));
+						gauge->set(val, max);
+						gauges.insert(std::pair<std::string, class Gauge *>(
+								name, gauge));
+					}
+				}
+			} else if(tokens[0] == "nogauge") {
+				if(tokens.size() >= 2) {
+					std::string name = tokens[1];
+					try {
+						delete(gauges.at(name));
+						gauges.erase(name);
+					} catch(...) { }
 				}
 			} else if(tokens[0] == "EOF") {
 				stop = true;
