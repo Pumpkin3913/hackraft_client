@@ -43,6 +43,32 @@ int main() {
 	std::vector<std::string> tokens;
 	std::map<int, struct Player> players;
 	std::map<std::string, class Gauge *> gauges;
+	std::vector<std::string> macros = std::vector<std::string>(12, "");
+	const SDL_Scancode key_fn[] = {
+		SDL_SCANCODE_F1,
+		SDL_SCANCODE_F2,
+		SDL_SCANCODE_F3,
+		SDL_SCANCODE_F5,
+		SDL_SCANCODE_F6,
+		SDL_SCANCODE_F7,
+		SDL_SCANCODE_F8,
+		SDL_SCANCODE_F9,
+		SDL_SCANCODE_F10,
+		SDL_SCANCODE_F11,
+		SDL_SCANCODE_F12
+	};
+	const SDL_Scancode key_arrow[] = {
+		SDL_SCANCODE_UP,
+		SDL_SCANCODE_DOWN,
+		SDL_SCANCODE_LEFT,
+		SDL_SCANCODE_RIGHT
+	};
+	const std::string direction[] = {
+		"north",
+		"south",
+		"west",
+		"east"
+	};
 	class LuaConfig * conf = new LuaConfig("conf.lua");
 	class Sdl * sdl = new Sdl(
 			conf->get_int("screen_width"),
@@ -83,10 +109,7 @@ int main() {
 					/ conf->get_int("tileset_height"),
 			conf->get_int("tileset_width"),
 			conf->get_int("tileset_height"));
-	class Socket * socket = new Socket(
-			conf->get_int("port"),
-			conf->get_string("address"));
-	socket->setNonBlock();
+	class Socket * socket = NULL;
 	class Grid * grid = NULL;
 	int tileset_width = conf->get_int("tileset_width");
 	int tileset_height = conf->get_int("tileset_height");
@@ -97,6 +120,18 @@ int main() {
 	if(conf->get_string("title") != "") {
 		sdl->set_title(conf->get_string("title"));
 	}
+
+	for(int i=0; i<12; i++) {
+		std::string fn = "F"+std::to_string(i+1);
+		if(conf->get_string(fn) != "") {
+			macros[i] = conf->get_string(fn);
+		}
+	}
+
+	socket = new Socket(
+			conf->get_int("port"),
+			conf->get_string("address"));
+	socket->setNonBlock();
 
 	// delete(conf); // FIXME: It cause a double free error and I don't know why.
 
@@ -128,32 +163,14 @@ int main() {
 		for(char c : sdl->get_text()) {
 			textarea->add_char(sdl, font, c);
 		}
-		if(sdl->keydown(SDL_SCANCODE_UP)) {
-			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
-				textarea->add_string(sdl, font, " north");
-			} else {
-				socket->send("move north\n");
-			}
-		}
-		if(sdl->keydown(SDL_SCANCODE_DOWN)) {
-			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
-				textarea->add_string(sdl, font, " south");
-			} else {
-				socket->send("move south\n");
-			}
-		}
-		if(sdl->keydown(SDL_SCANCODE_LEFT)) {
-			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
-				textarea->add_string(sdl, font, " west");
-			} else {
-				socket->send("move west\n");
-			}
-		}
-		if(sdl->keydown(SDL_SCANCODE_RIGHT)) {
-			if(sdl->key(SDL_SCANCODE_LSHIFT)) {
-				textarea->add_string(sdl, font, " east");
-			} else {
-				socket->send("move east\n");
+		for(int i=0; i<4; i++) {
+			if(sdl->keydown(key_arrow[i])) {
+				if(sdl->key(SDL_SCANCODE_LSHIFT)
+						|| sdl->key(SDL_SCANCODE_RSHIFT)) {
+					textarea->add_string(sdl, font, direction[i]);
+				} else {
+					socket->send("move "+direction[i]+"\n");
+				}
 			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_BACKSPACE)) {
@@ -170,9 +187,25 @@ int main() {
 				textarea->clear();
 			}
 		}
-		if(sdl->keydown(SDL_SCANCODE_ESCAPE)) {
-			socket->send("quit\n");
+		for(int i=0; i<12; i++) {
+			if(sdl->keydown(key_fn[i])) {
+				if(sdl->key(SDL_SCANCODE_LSHIFT)
+						|| sdl->key(SDL_SCANCODE_RSHIFT)) {
+					macros[i] = textarea->get_text();
+				} else {
+					textarea->add_string(sdl, font, macros[i]);
+				}
+			}
 		}
+		if(sdl->keydown(SDL_SCANCODE_ESCAPE)) {
+			if(sdl->key(SDL_SCANCODE_LSHIFT)
+					|| sdl->key(SDL_SCANCODE_RSHIFT)) {
+				socket->send("quit\n");
+			} else {
+				textarea->clear();
+			}
+		}
+		// TODO : get SDL's quit event and close without "quit".
 
 		// Process Server Input.
 

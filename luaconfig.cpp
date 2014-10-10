@@ -19,16 +19,24 @@ LuaConfig::~LuaConfig() {
 int LuaConfig::get_int(std::string varname) {
 	lua_getglobal(this->lua, varname.c_str());
 	if(!lua_isnumber(this->lua, -1)) {
+		lua_pop(this->lua, 1);
 		throw varname + " is not a number.";
+	} else {
+		int i = lua_tonumber(this->lua, -1);
+		lua_pop(this->lua, 1);
+		return(i);
 	}
-	return(lua_tonumber(this->lua, -1));
 }
 
 std::string LuaConfig::get_string(std::string varname) {
 	lua_getglobal(this->lua, varname.c_str());
 	if(!lua_isstring(this->lua, -1)) {
+		lua_pop(this->lua, 1);
 		throw varname + " is not a string.";
+	} else {
+		std::string s = lua_tostring(this->lua, -1);
+		lua_pop(this->lua, 1);
+		return(s);
 	}
-	return(lua_tostring(this->lua, -1));
 }
 
