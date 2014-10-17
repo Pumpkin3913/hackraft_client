@@ -43,6 +43,7 @@ int main() {
 	std::vector<std::string> tokens;
 	std::map<int, struct Player> players;
 	std::map<std::string, class Gauge *> gauges;
+	std::map<std::pair<int,int>,int> floorObjects;
 	std::vector<std::string> macros = std::vector<std::string>(12, "");
 	const SDL_Scancode key_fn[] = {
 		SDL_SCANCODE_F1,
@@ -139,22 +140,27 @@ int main() {
 
 		// Draw.
 
-		console->draw(sdl);
-		textarea->draw(sdl);
 		if(grid) {
+			// Draw Floor.
 			window->draw(sdl, grid, tileset);
+			// Draw Objects.
+			for(std::pair<std::pair<int,int>,int> it : floorObjects) {
+				window->draw(sdl, it.second, tileset, it.first.first, it.first.second);
+			}
+			// Draw Players.
 			if(not sdl->key(SDL_SCANCODE_LCTRL)) {
 				for(std::pair<int, struct Player> it : players) {
 					window->draw(sdl, it.second.aspect, tileset, it.second.x, it.second.y);
 				}
 			}
 		}
-		{
-			int i = 0;
-			for(std::pair<std::string, class Gauge *> it : gauges) {
-				it.second->draw(sdl, 0, i);
-				i += it.second->getHeight();
-			}
+		// Draw UI.
+		console->draw(sdl);
+		textarea->draw(sdl);
+		int i = 0;
+		for(std::pair<std::string, class Gauge *> it : gauges) {
+			it.second->draw(sdl, 0, i);
+			i += it.second->getHeight();
 		}
 		sdl->next_frame();
 
@@ -315,6 +321,19 @@ int main() {
 						delete(gauges.at(name));
 						gauges.erase(name);
 					} catch(...) { }
+				}
+			} else if(tokens[0] == "obj") {
+				if(tokens.size() >= 4) {
+					int aspect = std::stoi(tokens[1]);
+					int x = std::stoi(tokens[2]);
+					int y = std::stoi(tokens[3]);
+					floorObjects[std::pair<int,int>(x,y)] = aspect;
+				}
+			} else if(tokens[0] == "noobj") {
+				if(tokens.size() >= 3) {
+					int x = std::stoi(tokens[1]);
+					int y = std::stoi(tokens[2]);
+					floorObjects.erase(std::pair<int,int>(x,y));
 				}
 			} else if(tokens[0] == "EOF") {
 				stop = true;
