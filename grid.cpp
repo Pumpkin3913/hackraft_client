@@ -64,3 +64,33 @@ void Grid::draw(class Sdl * sdl, class Tileset * tileset) {
 	}
 }
 
+void Grid::draw(
+	class Sdl * sdl,
+	class Tileset * tileset,
+	unsigned int x,
+	unsigned int y,
+	unsigned int val
+) {
+	class Sprite * sprite = tileset->get(val);
+	sprite->draw(sdl,
+		x*this->tile_width + this->x_shift,
+		y*this->tile_height + this->y_shift);
+}
+
+bool Grid::is_clic_in(signed int x, signed int y) {
+	return(
+		x >= this->x_shift && 
+		x < (this->width * this->tile_width) + this->x_shift &&
+		y >= this->y_shift &&
+		y < (this->height * this->tile_height) + this->y_shift
+	);
+}
+
+int Grid::get_clic_x(signed int x) {
+	return((x - this->x_shift) / this->tile_width);
+}
+
+int Grid::get_clic_y(signed int y) {
+	return((y - this->y_shift) / this->tile_height);
+}
+

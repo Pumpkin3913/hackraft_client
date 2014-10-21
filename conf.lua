@@ -22,6 +22,10 @@ font_blue     = 255
 console_height  = 5
 textarea_height = 1
 
+-- Theses widths are in number of cases.
+inventory_width = 3
+pickuplist_width = 3
+
 -- Theses settings are optionals: you can leave "".
 icon  = ""
 -- icon  = "icon.bmp"

@@ -10,6 +10,7 @@
 #include "gauge.h"
 
 #include <SDL2/SDL.h>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <map>
@@ -24,6 +25,13 @@ struct Player {
 		id(id), aspect(aspect), x(x), y(y) { }
 };
 
+struct Item {
+	int id;
+	int aspect;
+	Item(int id, int aspect) :
+		id(id), aspect(aspect) { }
+};
+
 std::vector<std::string> split(std::string input, char delim) {
 	std::vector<std::string> output;
 	int begin = 0;
@@ -36,7 +44,17 @@ std::vector<std::string> split(std::string input, char delim) {
 	return(output);
 }
 
+void main_bis();
+
 int main() {
+	try {
+		main_bis();
+	} catch(std::string error) {
+		std::cerr << "ERROR: " << error << std::endl;
+	}
+}
+
+void main_bis() {
 	bool stop = false;
 	int follow_id = 0;
 	std::string input;
@@ -44,6 +62,12 @@ int main() {
 	std::map<int, struct Player> players;
 	std::map<std::string, class Gauge *> gauges;
 	std::map<std::pair<int,int>,int> floorObjects;
+	/* XXX //
+	std::list<struct Item> inventory;
+	std::list<struct Item> pickuplist;
+	// XXX */
+	std::vector<struct Item> inventory;
+	std::vector<struct Item> pickuplist;
 	std::vector<std::string> macros = std::vector<std::string>(12, "");
 	const SDL_Scancode key_fn[] = {
 		SDL_SCANCODE_F1,
@@ -110,10 +134,33 @@ int main() {
 					/ conf->get_int("tileset_height"),
 			conf->get_int("tileset_width"),
 			conf->get_int("tileset_height"));
+	class Grid * inventory_gui = new Grid(
+			conf->get_int("inventory_width"),
+			(conf->get_int("screen_height")
+				- conf->get_int("console_height")*font->lineskip()
+				- conf->get_int("textarea_height")*font->lineskip())
+					/ conf->get_int("tileset_height"),
+			conf->get_int("tileset_width"),
+			conf->get_int("tileset_height"));
+	class Grid * pickuplist_gui = new Grid(
+			conf->get_int("pickuplist_width"), // width
+			(conf->get_int("screen_height")
+				- conf->get_int("console_height")*font->lineskip()
+				- conf->get_int("textarea_height")*font->lineskip())
+					/ conf->get_int("tileset_height"), // height
+			conf->get_int("tileset_width"), // tile_width
+			conf->get_int("tileset_height"), // tile_height
+			conf->get_int("screen_width") -
+				(conf->get_int("pickuplist_width")
+				* conf->get_int("tileset_width")), // x_shift
+			0); // y_shift
+
 	class Socket * socket = NULL;
 	class Grid * grid = NULL;
 	int tileset_width = conf->get_int("tileset_width");
 	int tileset_height = conf->get_int("tileset_height");
+	int inventory_width = conf->get_int("inventory_width");
+	int pickuplist_width = conf->get_int("pickuplist_width");
 
 	if(conf->get_string("icon") != "") {
 		sdl->set_icon(conf->get_string("icon"));
@@ -143,12 +190,12 @@ int main() {
 		if(grid) {
 			// Draw Floor.
 			window->draw(sdl, grid, tileset);
-			// Draw Objects.
-			for(std::pair<std::pair<int,int>,int> it : floorObjects) {
-				window->draw(sdl, it.second, tileset, it.first.first, it.first.second);
-			}
-			// Draw Players.
 			if(not sdl->key(SDL_SCANCODE_LCTRL)) {
+				// Draw Objects.
+				for(std::pair<std::pair<int,int>,int> it : floorObjects) {
+					window->draw(sdl, it.second, tileset, it.first.first, it.first.second);
+				}
+				// Draw Players.
 				for(std::pair<int, struct Player> it : players) {
 					window->draw(sdl, it.second.aspect, tileset, it.second.x, it.second.y);
 				}
@@ -159,9 +206,24 @@ int main() {
 		textarea->draw(sdl);
 		int i = 0;
 		for(std::pair<std::string, class Gauge *> it : gauges) {
-			it.second->draw(sdl, 0, i);
+			it.second->draw(sdl, inventory_width * tileset_width, i);
 			i += it.second->getHeight();
 		}
+		i = 0;
+		for(struct Item item : inventory) {
+			inventory_gui->draw(sdl, tileset,
+				i % inventory_width, i / inventory_width,
+				item.aspect);
+			i++;
+		}
+		i = 0;
+		for(struct Item item : pickuplist) {
+			pickuplist_gui->draw(sdl, tileset,
+				i % pickuplist_width, i / pickuplist_width,
+				item.aspect);
+			i++;
+		}
+
 		sdl->next_frame();
 
 		// Process Keyboard Input.
@@ -213,6 +275,72 @@ int main() {
 		}
 		// TODO : get SDL's quit event and close without "quit".
 
+		// Process Mouse Input.
+		for(struct Clic clic : sdl->get_clics()) {
+			int objx, objy;
+			std::string command;
+			int gui_width;
+			class Grid * gui = NULL;
+			std::vector<struct Item> * itemlist = NULL;
+			struct Item * item = NULL;
+			if(inventory_gui->is_clic_in(clic.x, clic.y)) {
+				gui = inventory_gui;
+				gui_width = inventory_width;
+				itemlist = &inventory;
+				command = "drop";
+			} else if(pickuplist_gui->is_clic_in(clic.x, clic.y)) {
+				gui = pickuplist_gui;
+				gui_width = pickuplist_width;
+				itemlist = &pickuplist;
+				command = "pickup";
+			}
+			if(gui) {
+				objx = gui->get_clic_x(clic.x);
+				objy = gui->get_clic_y(clic.y);
+				try {
+					item = &(itemlist->at(objy * gui_width + objx));
+				} catch(...) { }
+			}
+			if(item) {
+				if(clic.button == SDL_BUTTON_LEFT) {
+					// Add object's id to console.
+					textarea->add_string(sdl, font, std::to_string(item->id));
+				} else if(clic.button == SDL_BUTTON_RIGHT) {
+					// send pickup/drop object's id.
+					socket->send(command+" "+std::to_string(item->id)+"\n");
+				}
+			}
+		}
+		/* XXX //
+				objx = inventory_gui->get_clic_x(clic.x);
+				objy = inventory_gui->get_clic_y(clic.y);
+				try {
+					item = inventory.at(objy * inventory_width + objx);
+					if(clic.button == SDL_BUTTON_LEFT) {
+						// Add object's id to console.
+						textarea->add_string(sdl, font, std::to_string(item.id));
+					} else if(clic.button == SDL_BUTTON_RIGHT) {
+						// send pickup/drop object's id.
+						socket->send("drop " + std::to_string(item.id) + "\n");
+					}
+				} catch(...) { }
+			} else if(pickuplist_gui->is_clic_in(clic.x, clic.y)) {
+				objx = pickuplist_gui->get_clic_x(clic.x);
+				objy = pickuplist_gui->get_clic_y(clic.y);
+				try  {
+					item = inventory.at(objy * inventory_width + objx);
+					if(clic.button == SDL_BUTTON_LEFT) {
+						// Add object's id to console.
+						textarea->add_string(sdl, font, std::to_string(item.id));
+					} else if(clic.button == SDL_BUTTON_RIGHT) {
+						// send pickup/drop object's id.
+						socket->send("pickup " + std::to_string(item.id) + "\n");
+					}
+				} catch(...) { }
+			}
+		}
+		// XXX */
+
 		// Process Server Input.
 
 		input = socket->getline();
@@ -238,6 +366,7 @@ int main() {
 					}
 					if(id == follow_id) {
 						window->set_center(x, y);
+						pickuplist.clear();
 					}
 				}
 			} else if(tokens[0] == "exit") {
@@ -262,11 +391,12 @@ int main() {
 					h = std::stoi(tokens[2]);
 					name = tokens[3];
 					players.clear();
+					floorObjects.clear();
 
 					if(grid) delete(grid);
 					grid = new Grid(w, h, tileset_width, tileset_height);
 
-					// TODO : waith
+					// TODO : be blocking for this getline() only.
 					input = socket->getline();
 					tokens = split(input, ',');
 					if(tokens.size() == w*h) {
@@ -334,6 +464,38 @@ int main() {
 					int x = std::stoi(tokens[1]);
 					int y = std::stoi(tokens[2]);
 					floorObjects.erase(std::pair<int,int>(x,y));
+				}
+			} else if(tokens[0] == "invent") {
+				if(tokens.size() >= 3) {
+					int id = std::stoi(tokens[1]);
+					int aspect = std::stoi(tokens[2]);
+					inventory.push_back(Item(id,aspect));
+				}
+			} else if(tokens[0] == "noinvent") {
+				if(tokens.size() >= 2) {
+					int id = std::stoi(tokens[1]);
+					for(auto it = inventory.begin(); it != inventory.end(); it++) {
+						if(it->id == id) {
+							inventory.erase(it);
+							break;
+						}
+					}
+				}
+			} else if(tokens[0] == "addpickuplist") {
+				if(tokens.size() >= 3) {
+					int id = std::stoi(tokens[1]);
+					int aspect = std::stoi(tokens[2]);
+					pickuplist.push_back(Item(id,aspect));
+				}
+			} else if(tokens[0] == "rempickuplist") {
+				if(tokens.size() >= 2) {
+					int id = std::stoi(tokens[1]);
+					for(auto it = pickuplist.begin(); it != inventory.end(); it++) {
+						if(it->id == id) {
+							pickuplist.erase(it);
+							break;
+						}
+					}
 				}
 			} else if(tokens[0] == "EOF") {
 				stop = true;

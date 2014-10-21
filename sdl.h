@@ -9,6 +9,15 @@ class Sprite;
 #include <list>
 #include <map>
 
+struct Clic {
+	// Relative to SDL_Window.
+	int x;
+	int y;
+	char button;
+	Clic(int x, int y, char button) :
+		x(x), y(y), button(button) { }
+};
+
 class Sdl {
 private:
 	SDL_Window * window;
@@ -20,6 +29,7 @@ private:
 
 	std::list<SDL_Scancode> scancodes;
 	std::string text_input;
+	std::list<struct Clic> clics;
 	std::map<std::string, class Sprite *> sprites;
 
 	Sdl(const class Sdl&) = delete;
@@ -41,6 +51,7 @@ public:
 	bool key(SDL_Scancode key);
 	bool keydown(SDL_Scancode key);
 	std::string get_text();
+	std::list<struct Clic> get_clics();
 	void load_sprite(std::string sprite_name, std::string file_name);
 	void load_sprite(std::string sprite_name, class Sprite * sprite);
 	class Sprite * get_sprite(std::string name);

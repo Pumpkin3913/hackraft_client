@@ -34,6 +34,11 @@ class Grid {
 		void set(unsigned int x, unsigned int y, unsigned int val);
 		void fill(unsigned int val);
 		void draw(class Sdl * sdl, class Tileset * tileset);
+		void draw(class Sdl * sdl, class Tileset * tileset,
+				unsigned int x, unsigned int y, unsigned int val);
+		bool is_clic_in(signed int x, signed int y);
+		int get_clic_x(signed int x);
+		int get_clic_y(signed int y);
 };
 
 #endif

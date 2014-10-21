@@ -44,7 +44,7 @@ Sdl::Sdl(unsigned int width, unsigned int height) :
 	SDL_SetWindowSize(window, this->width, this->height);
 	SDL_SetWindowPosition(window,
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-	SDL_ShowCursor(SDL_DISABLE);
+	// SDL_ShowCursor(SDL_DISABLE);
 #ifndef DEBUG
 	SDL_SetWindowFullscreen(this->window, SDL_WINDOW_FULLSCREEN);
 #endif // DEBUG
@@ -117,12 +117,16 @@ void Sdl::next_frame() {
 	SDL_Delay(10);
 
 	this->scancodes.clear();
+	this->clics.clear();
 	this->text_input = "";
 	while(SDL_PollEvent(&event)) {
 		if(event.type == SDL_KEYDOWN) {
 			this->scancodes.push_back(event.key.keysym.scancode);
 		} else if(event.type == SDL_TEXTINPUT) {
 			this->text_input += event.text.text;
+		} else if(event.type == SDL_MOUSEBUTTONDOWN) {
+			this->clics.push_back(
+				Clic(event.button.x, event.button.y, event.button.button));
 		}
 	}
 }
@@ -146,6 +150,10 @@ bool Sdl::keydown(SDL_Scancode key) {
 
 std::string Sdl::get_text() {
 	return(this->text_input);
+}
+
+std::list<struct Clic> Sdl::get_clics() {
+	return(this->clics);
 }
 
 void Sdl::load_sprite(std::string sprite_name, std::string file_name) {
