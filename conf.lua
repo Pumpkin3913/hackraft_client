@@ -1,16 +1,20 @@
-address = "127.0.0.1"
-port    = 31337
+address = "91.224.149.43"
+port    = 443
+
+-- address = "127.0.0.1"
+-- port    = 31337
 
 screen_width  = 800
 screen_height = 600
 
--- tileset_filename = "data/redruins.bmp"
--- tileset_width    = 20
--- tileset_height   = 20
+-- tileset_filename = "data/ascii.bmp"
+-- tileset_width    = 10
+-- tileset_height   = 10
 
-tileset_filename = "data/ascii.bmp"
-tileset_width    = 10
-tileset_height   = 10
+-- tileset_filename = "data/redruins.bmp"
+tileset_filename = "data/violetcastle.bmp"
+tileset_width    = 20
+tileset_height   = 20
 
 font_filename = "data/font.ttf"
 font_height   = 20
