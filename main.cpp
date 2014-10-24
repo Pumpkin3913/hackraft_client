@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <list>
 
 struct Player {
 	int id;
@@ -62,10 +61,6 @@ void main_bis() {
 	std::map<int, struct Player> players;
 	std::map<std::string, class Gauge *> gauges;
 	std::map<std::pair<int,int>,int> floorObjects;
-	/* XXX //
-	std::list<struct Item> inventory;
-	std::list<struct Item> pickuplist;
-	// XXX */
 	std::vector<struct Item> inventory;
 	std::vector<struct Item> pickuplist;
 	std::vector<std::string> macros = std::vector<std::string>(12, "");
@@ -99,8 +94,8 @@ void main_bis() {
 	class Sdl * sdl = new Sdl(
 			conf->get_int("screen_width"),
 			conf->get_int("screen_height"));
-	class Tileset * tileset = new Tileset(sdl,
-			std::string(conf->get_string("tileset_filename")),
+	class Tileset * tileset = new Tileset(// sdl, // XXX
+			// std::string(conf->get_string("tileset_filename")), // XXX
 			conf->get_int("tileset_width"),
 			conf->get_int("tileset_height"));
 	class TextRenderer * font = new TextRenderer(
@@ -162,6 +157,10 @@ void main_bis() {
 	int tileset_height = conf->get_int("tileset_height");
 	int inventory_width = conf->get_int("inventory_width");
 	int pickuplist_width = conf->get_int("pickuplist_width");
+
+	for(std::string filename : conf->get_strings("tileset")) {
+		tileset->append(sdl, filename);
+	}
 
 	if(conf->get_string("icon") != "") {
 		sdl->set_icon(conf->get_string("icon"));

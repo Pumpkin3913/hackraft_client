@@ -11,8 +11,7 @@ screen_height = 600
 -- tileset_width    = 10
 -- tileset_height   = 10
 
--- tileset_filename = "data/redruins.bmp"
-tileset_filename = "data/violetcastle.bmp"
+tileset = {"data/redruins.bmp", "data/violetcastle.bmp", "data/bluescifi.bmp"}
 tileset_width    = 20
 tileset_height   = 20
 

@@ -6,13 +6,56 @@
 #include <SDL2/SDL.h>
 
 Tileset::Tileset(
+	unsigned int tile_width,
+	unsigned int tile_height
+) :
+	tile_width(tile_width),
+	tile_height(tile_height),
+	tiles(std::vector<class Sprite *>())
+{ }
+
+Tileset::Tileset(
 	class Sdl * sdl,
 	std::string filename,
 	unsigned int tile_width,
 	unsigned int tile_height
 ) :
+	tile_width(tile_width),
+	tile_height(tile_height),
 	tiles(std::vector<class Sprite *>())
 {
+	this->append(sdl, filename);
+}
+
+Tileset::~Tileset() {
+	for(class Sprite * sprite : this->tiles) {
+		delete(sprite);
+	}
+}
+
+unsigned int Tileset::get_tile_width() {
+	return(this->tile_width);
+}
+
+unsigned int Tileset::get_tile_height() {
+	return(this->tile_height);
+}
+
+unsigned int Tileset::size() {
+	return(this->tiles.size());
+}
+
+class Sprite * Tileset::get(unsigned int index) {
+	class Sprite * toret;
+	if(index >= this->tiles.size()) {
+		toret = this->tiles.at(0);
+	} else {
+		toret = this->tiles.at(index);
+	}
+	return(toret);
+}
+
+void Tileset::append(class Sdl * sdl, std::string filename) {
 	SDL_Surface * surface_source;
 	SDL_Surface * surface_buffer;
 	SDL_Rect src;
@@ -55,21 +98,5 @@ Tileset::Tileset(
 		}
 	}
 	SDL_FreeSurface(surface_source);
-}
-
-Tileset::~Tileset() {
-	for(class Sprite * sprite : this->tiles) {
-		delete(sprite);
-	}
-}
-
-class Sprite * Tileset::get(unsigned int index) {
-	class Sprite * toret;
-	if(index >= this->tiles.size()) {
-		toret = this->tiles.at(0);
-	} else {
-		toret = this->tiles.at(index);
-	}
-	return(toret);
 }
 
