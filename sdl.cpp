@@ -12,6 +12,7 @@ Sdl::Sdl(unsigned int width, unsigned int height) :
 	max_key(0),
 	width(width),
 	height(height),
+	quit(false),
 	scancodes(),
 	sprites()
 {
@@ -45,9 +46,7 @@ Sdl::Sdl(unsigned int width, unsigned int height) :
 	SDL_SetWindowPosition(window,
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	// SDL_ShowCursor(SDL_DISABLE);
-#ifndef DEBUG
-	SDL_SetWindowFullscreen(this->window, SDL_WINDOW_FULLSCREEN);
-#endif // DEBUG
+	// SDL_SetWindowFullscreen(this->window, SDL_WINDOW_FULLSCREEN);
 	// SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 	// makes the scaled rendering look smoother. // DON'T DO THAT!!!
 
@@ -154,6 +153,10 @@ std::string Sdl::get_text() {
 
 std::list<struct Clic> Sdl::get_clics() {
 	return(this->clics);
+}
+
+bool Sdl::has_quit() {
+	return(this->quit);
 }
 
 void Sdl::load_sprite(std::string sprite_name, std::string file_name) {

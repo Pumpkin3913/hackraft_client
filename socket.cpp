@@ -10,7 +10,7 @@
 
 // TODO : keep ip and port data in private fields, implement public accessors.
 
-Socket::Socket() : fd(-1), ok(true) { }
+Socket::Socket() : fd(-1), ok(false) { }
 
 Socket::Socket(int fd) : fd(fd), ok(true) { }
 

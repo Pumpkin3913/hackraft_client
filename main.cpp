@@ -181,9 +181,20 @@ void main_bis() {
 			conf->get_string("address"));
 	socket->setNonBlock();
 
+	if(not socket->isOk()) {
+		console->add_line(sdl, font,
+			"Connexion ERROR ("
+			+ conf->get_string("address")
+			+ ":"
+			+ to_string(conf->get_int("port"))
+			+ ")");
+		console->add_line(sdl, font, socket->getError());
+		stop = true;
+	}
+
 	// delete(conf); // FIXME: It cause a double free error and I don't know why.
 
-	while(not stop) {
+	while(not sdl->has_quit()) {
 
 		// Draw.
 
@@ -266,14 +277,17 @@ void main_bis() {
 			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_ESCAPE)) {
-			if(sdl->key(SDL_SCANCODE_LSHIFT)
-					|| sdl->key(SDL_SCANCODE_RSHIFT)) {
-				socket->send("quit\n");
+			if(stop) {
+				break;
 			} else {
-				textarea->clear();
+				if(sdl->key(SDL_SCANCODE_LSHIFT)
+						|| sdl->key(SDL_SCANCODE_RSHIFT)) {
+					socket->send("quit\n");
+				} else {
+					textarea->clear();
+				}
 			}
 		}
-		// TODO : get SDL's quit event and close without "quit".
 
 		// Process Mouse Input.
 		for(struct Clic clic : sdl->get_clics()) {

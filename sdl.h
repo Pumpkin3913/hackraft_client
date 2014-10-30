@@ -26,6 +26,7 @@ private:
 	int max_key;
 	unsigned int width;
 	unsigned int height;
+	bool quit;
 
 	std::list<SDL_Scancode> scancodes;
 	std::string text_input;
@@ -52,6 +53,7 @@ public:
 	bool keydown(SDL_Scancode key);
 	std::string get_text();
 	std::list<struct Clic> get_clics();
+	bool has_quit();
 	void load_sprite(std::string sprite_name, std::string file_name);
 	void load_sprite(std::string sprite_name, class Sprite * sprite);
 	class Sprite * get_sprite(std::string name);
