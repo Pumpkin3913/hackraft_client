@@ -5,10 +5,10 @@
 Sprite::Sprite(class Sdl * sdl, const std::string filename) {
 	SDL_Surface * surface = SDL_LoadBMP(filename.c_str());
 	if(surface == NULL)
-		sdl->error("Unable to load bmp file");
+		sdl->error(filename + ": unable to load bmp file");
 	this->texture = SDL_CreateTextureFromSurface(sdl->get_renderer(), surface);
 	if(texture == NULL)
-		sdl->error("Unable to create texture from surface");
+		sdl->error(filename + ": unable to create texture from surface");
 	this->w = surface->w;
 	this->h = surface->h;
 	SDL_FreeSurface(surface);

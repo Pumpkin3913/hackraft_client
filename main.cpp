@@ -186,7 +186,7 @@ void main_bis() {
 			"Connexion ERROR ("
 			+ conf->get_string("address")
 			+ ":"
-			+ to_string(conf->get_int("port"))
+			+ std::to_string(conf->get_int("port"))
 			+ ")");
 		console->add_line(sdl, font, socket->getError());
 		stop = true;

@@ -62,7 +62,7 @@ void Tileset::append(class Sdl * sdl, std::string filename) {
 
 	surface_source = SDL_LoadBMP(filename.c_str());
 	if(surface_source == NULL)
-		sdl->error("Unable to load bmp file");
+		sdl->error(filename + ": unable to load bmp file");
 
 	src.w = tile_width;
 	src.h = tile_height;
