@@ -88,12 +88,12 @@ std::string Socket::getline() {
 	}
 }
 
-void Socket::setNonBlock() {
+void Socket::setBlocking(bool status) {
 	int flags = fcntl(this->fd, F_GETFL, 0);
 	if(flags == -1) {
 		flags = 0;
 	}
-	int new_flags = flags | O_NONBLOCK;
+	int new_flags = status ? flags & ~O_NONBLOCK : flags | O_NONBLOCK;
 	flags = fcntl(this->fd, F_SETFL, new_flags);
 	if(flags == -1) {
 	}

@@ -18,7 +18,7 @@ class Socket {
 		std::string receive();
 		inline char getchar();
 		std::string getline();
-		void setNonBlock();
+		void setBlocking(bool status);
 		bool isOk();
 		std::string getError();
 };

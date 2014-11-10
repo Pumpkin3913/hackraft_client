@@ -43,17 +43,18 @@ std::vector<std::string> split(std::string input, char delim) {
 	return(output);
 }
 
-void main_bis();
+void main_bis(std::string conf_filename);
 
-int main() {
+int main(int argc, char * argv[]) {
+	std::string conf_filename = argc > 1 ? argv[1] : "conf.lua";
 	try {
-		main_bis();
+		main_bis(conf_filename);
 	} catch(std::string error) {
 		std::cerr << "ERROR: " << error << std::endl;
 	}
 }
 
-void main_bis() {
+void main_bis(std::string conf_filename) {
 	bool stop = false;
 	int follow_id = 0;
 	std::string input;
@@ -90,12 +91,11 @@ void main_bis() {
 		"west",
 		"east"
 	};
-	class LuaConfig * conf = new LuaConfig("conf.lua");
+	class LuaConfig * conf = new LuaConfig(conf_filename);
 	class Sdl * sdl = new Sdl(
 			conf->get_int("screen_width"),
 			conf->get_int("screen_height"));
-	class Tileset * tileset = new Tileset(// sdl, // XXX
-			// std::string(conf->get_string("tileset_filename")), // XXX
+	class Tileset * tileset = new Tileset(
 			conf->get_int("tileset_width"),
 			conf->get_int("tileset_height"));
 	class TextRenderer * font = new TextRenderer(
@@ -179,7 +179,7 @@ void main_bis() {
 	socket = new Socket(
 			conf->get_int("port"),
 			conf->get_string("address"));
-	socket->setNonBlock();
+	socket->setBlocking(false);
 
 	if(not socket->isOk()) {
 		console->add_line(sdl, font,
@@ -325,35 +325,6 @@ void main_bis() {
 				}
 			}
 		}
-		/* XXX //
-				objx = inventory_gui->get_clic_x(clic.x);
-				objy = inventory_gui->get_clic_y(clic.y);
-				try {
-					item = inventory.at(objy * inventory_width + objx);
-					if(clic.button == SDL_BUTTON_LEFT) {
-						// Add object's id to console.
-						textarea->add_string(sdl, font, std::to_string(item.id));
-					} else if(clic.button == SDL_BUTTON_RIGHT) {
-						// send pickup/drop object's id.
-						socket->send("drop " + std::to_string(item.id) + "\n");
-					}
-				} catch(...) { }
-			} else if(pickuplist_gui->is_clic_in(clic.x, clic.y)) {
-				objx = pickuplist_gui->get_clic_x(clic.x);
-				objy = pickuplist_gui->get_clic_y(clic.y);
-				try  {
-					item = inventory.at(objy * inventory_width + objx);
-					if(clic.button == SDL_BUTTON_LEFT) {
-						// Add object's id to console.
-						textarea->add_string(sdl, font, std::to_string(item.id));
-					} else if(clic.button == SDL_BUTTON_RIGHT) {
-						// send pickup/drop object's id.
-						socket->send("pickup " + std::to_string(item.id) + "\n");
-					}
-				} catch(...) { }
-			}
-		}
-		// XXX */
 
 		// Process Server Input.
 
@@ -410,8 +381,9 @@ void main_bis() {
 					if(grid) delete(grid);
 					grid = new Grid(w, h, tileset_width, tileset_height);
 
-					// TODO : be blocking for this getline() only.
+					socket->setBlocking(true);
 					input = socket->getline();
+					socket->setBlocking(false);
 					tokens = split(input, ',');
 					if(tokens.size() == w*h) {
 						for(int x=0; x<w; x++) {
