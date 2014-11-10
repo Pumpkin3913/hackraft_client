@@ -3,10 +3,19 @@
 #include "string.h" // strerror()
 #include "errno.h" // errno
 #include <unistd.h> // close()
-#include <sys/socket.h> // socket(), bind(), listen()
-#include <netinet/in.h> // IPv4, IPv6
-#include <arpa/inet.h> // inet_ntoa()
 #include <fcntl.h>
+
+#ifdef __linux__
+# include <sys/socket.h> // socket(), bind(), listen()
+# include <netinet/in.h> // IPv4, IPv6
+# include <arpa/inet.h> // inet_ntoa()
+#endif
+#ifdef _WIN32
+# include <winsock2.h>
+# ifndef BUFSIZ
+#  define BUFSIZ 1024
+# endif
+#endif
 
 // TODO : keep ip and port data in private fields, implement public accessors.
 
@@ -14,17 +23,41 @@ Socket::Socket() : fd(-1), ok(false) { }
 
 Socket::Socket(int fd) : fd(fd), ok(true) { }
 
-Socket::Socket(short port, std::string address) : ok(true) {
+Socket::Socket(short port, std::string address) : ok(false) {
 	struct sockaddr_in addr;
+
+#ifdef _WIN32
+	WSADATA wsaData;
+	int flag;
+	flag = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if(flag != 0) {
+		this->error =
+			std::string("Unable to create socket: WSAStartup failed: ")
+			+ "Windows error code " + std::to_string(flag);
+		return;
+	}
+#endif
+
 	this->fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->fd == -1) {
-		this->error = std::string("Unable to create socket: ")+strerror(errno);
-		this->ok = false;
+		this->error = std::string("Unable to create socket: ") +
+#ifdef __linux__
+			strerror(errno)
+#endif
+#ifdef _WIN32
+			"Windows error code " + std::to_string(WSAGetLastError())
+#endif
+		;
 		return;
 	}
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
+#ifdef __linux__
 	inet_aton(address.c_str(), &(addr.sin_addr));
+#endif
+#ifdef _WIN32
+	addr.sin_addr.s_addr = inet_addr(address.c_str());
+#endif
 	if(connect(
 		this->fd,
 		(struct sockaddr *)&addr,
@@ -43,10 +76,16 @@ Socket::~Socket() {
 }
 
 void Socket::send(std::string message) {
+#ifdef __linux__
 	write(this->fd, message.c_str(), message.length());
+#endif
+#ifdef _WIN32
+	::send(this->fd, message.c_str(), message.length(), 0);
+#endif
 }
 
 std::string Socket::receive() {
+#ifdef __linux__
 	char buf[BUFSIZ];
 	int nb_read = read(this->fd, buf, BUFSIZ);
 	if(nb_read > 0) {
@@ -58,20 +97,41 @@ std::string Socket::receive() {
 		}
 		return("");
 	}
+#endif
+#ifdef _WIN32
+	this->ok = false;
+	this->error = "Socket::receive : unimplemented method";
+	return("");
+// TODO
+#endif
 }
 
 inline char Socket::getchar() {
 	char c;
 	int flag;
-	flag = read(this->fd, &c, 1);
-	if(flag != 1) {
-		if(errno) {
-			this->error = std::string("Reading from socket: ")+strerror(errno);
-			this->ok = false;
-		}
-		return((char)0);
+	flag =
+#ifdef __linux__
+		read(this->fd, &c, 1);
+#endif
+#ifdef _WIN32
+		recv(this->fd, &c, 1, 0);
+#endif
+	if(flag == -1) {
+		this->ok = false;
+		this->error = std::string("Reading from socket: ") +
+#ifdef __linux__
+			strerror(errno)
+#endif
+#ifdef _WIN32
+			"Windows error code " + std::to_string(WSAGetLastError())
+#endif
+		;
 	}
-	return(c);
+	if(flag <= 0) {
+		return((char)0);
+	} else {
+		return(c);
+	}
 }
 
 std::string Socket::getline() {
@@ -89,6 +149,7 @@ std::string Socket::getline() {
 }
 
 void Socket::setBlocking(bool status) {
+#ifdef __linux__
 	int flags = fcntl(this->fd, F_GETFL, 0);
 	if(flags == -1) {
 		flags = 0;
@@ -97,6 +158,11 @@ void Socket::setBlocking(bool status) {
 	flags = fcntl(this->fd, F_SETFL, new_flags);
 	if(flags == -1) {
 	}
+#endif
+#ifdef _WIN32
+	long unsigned int i = status ? 0 : 1;
+	ioctlsocket(this->fd, FIONBIO, &i);
+#endif
 }
 
 bool Socket::isOk() {
@@ -109,7 +175,12 @@ std::string Socket::getError() {
 
 ServerSocket::ServerSocket(short port) : Socket() {
 	struct sockaddr_in addr;
+#ifdef __linux__
 	int yes=1;
+#endif
+#ifdef _WIN32
+	const char yes = (const char) TRUE;
+#endif
 
 	if((this->fd = socket(PF_INET, SOCK_STREAM, 0))==-1) {
 		this->error = std::string("Unable to create socket: ")+strerror(errno);
@@ -149,6 +220,9 @@ ServerSocket::ServerSocket(short port) : Socket() {
 
 class Socket * ServerSocket::accept() {
 	struct sockaddr_in remote_addr;
+#ifdef _WIN32
+	typedef int socklen_t;
+#endif
 	socklen_t addr_len = sizeof(struct sockaddr_in);
 	int new_fd = ::accept(this->fd, (struct sockaddr*) &remote_addr, &addr_len);
 	if(new_fd == -1) {
