@@ -64,9 +64,9 @@ Socket::Socket(short port, std::string address) : ok(false) {
 		sizeof(struct sockaddr_in)
 	) == -1) {
 		this->error = std::string("Unable to connect socket: ")+strerror(errno);
-		this->ok = false;
 		return;
 	}
+	this->ok = true;
 }
 
 Socket::~Socket() {

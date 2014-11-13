@@ -118,6 +118,7 @@ void Sdl::next_frame() {
 	this->scancodes.clear();
 	this->clics.clear();
 	this->text_input = "";
+	// this->quit = false;
 	while(SDL_PollEvent(&event)) {
 		if(event.type == SDL_KEYDOWN) {
 			this->scancodes.push_back(event.key.keysym.scancode);
@@ -126,6 +127,8 @@ void Sdl::next_frame() {
 		} else if(event.type == SDL_MOUSEBUTTONDOWN) {
 			this->clics.push_back(
 				Clic(event.button.x, event.button.y, event.button.button));
+		} else if(event.type == SDL_QUIT) {
+			this->quit = true;
 		}
 	}
 }

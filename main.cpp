@@ -484,6 +484,7 @@ void main_bis(std::string conf_filename) {
 					}
 				}
 			} else if(tokens[0] == "EOF") {
+				console->add_line(sdl, font, "DISCONNECTED");
 				stop = true;
 			} else {
 				// unrecognized command.
