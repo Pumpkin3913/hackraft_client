@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <SDL2/SDL_image.h>
 
 Sdl::Sdl(unsigned int width, unsigned int height) :
 	window(NULL),
@@ -24,6 +25,11 @@ Sdl::Sdl(unsigned int width, unsigned int height) :
 	// Initialize TTF.
 	if(TTF_Init()) {
 		this->error_ttf("Unable to init TTF");
+	}
+
+	// Initialize IMG.
+	if(IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG) != (IMG_INIT_JPG | IMG_INIT_PNG)) {
+		this->error_img("Unable to init IMG");
 	}
 
 	// Create window.
@@ -66,6 +72,8 @@ Sdl::~Sdl() {
 
 	SDL_DestroyRenderer(this->renderer);
 	SDL_DestroyWindow(this->window);
+	TTF_Quit();
+	IMG_Quit();
 	SDL_Quit();
 }
 
@@ -76,6 +84,11 @@ void Sdl::error(std::string message) {
 
 void Sdl::error_ttf(std::string message) {
 	std::cerr << message << " : " << TTF_GetError() << std::endl;
+	exit(1);
+}
+
+void Sdl::error_img(std::string message) {
+	std::cerr << message << " : " << IMG_GetError() << std::endl;
 	exit(1);
 }
 
@@ -96,7 +109,7 @@ SDL_Renderer * Sdl::get_renderer() {
 }
 
 void Sdl::set_icon(std::string filename) {
-	SDL_Surface* icon = SDL_LoadBMP(filename.c_str());
+	SDL_Surface* icon = IMG_Load(filename.c_str());
 	if(!icon)
 		this->error("Unable to load icon file " + filename);
 	SDL_SetWindowIcon(this->window, icon);

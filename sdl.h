@@ -42,6 +42,7 @@ public:
 	~Sdl();
 	void error(std::string message);
 	void error_ttf(std::string message);
+	void error_img(std::string message);
 	unsigned int get_width();
 	unsigned int get_height();
 	int get_max_key();

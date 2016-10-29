@@ -10,7 +10,7 @@ CXX = clang
 #CXXFLAGS = -Wall -pedantic -DDEBUG -g -std=c++11
 CFLAGS   = -Wall -pedantic -O3
 CXXFLAGS = -Wall -pedantic -O3 -std=c++11
-LDLIBS = -lstdc++ -lSDL2 -lSDL2_ttf -llua
+LDLIBS = -lstdc++ -lSDL2 -lSDL2_ttf -lSDL2_image -llua
 $(RM) = rm -f
 
 SRCS = main.cpp sdl.cpp sprite.cpp textrenderer.cpp grid.cpp tileset.cpp window.cpp socket.cpp luaconfig.cpp console.cpp textarea.cpp gauge.cpp

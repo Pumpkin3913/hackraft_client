@@ -4,6 +4,7 @@
 #include "sprite.h"
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 Tileset::Tileset(
 	unsigned int tile_width,
@@ -60,9 +61,9 @@ void Tileset::append(class Sdl * sdl, std::string filename) {
 	SDL_Surface * surface_buffer;
 	SDL_Rect src;
 
-	surface_source = SDL_LoadBMP(filename.c_str());
+	surface_source = IMG_Load(filename.c_str());
 	if(surface_source == NULL)
-		sdl->error(filename + ": unable to load bmp file");
+		sdl->error(filename + ": unable to load file");
 
 	src.w = tile_width;
 	src.h = tile_height;

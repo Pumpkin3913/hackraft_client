@@ -2,10 +2,12 @@
 
 #include "sdl.h"
 
+#include <SDL2/SDL_image.h>
+
 Sprite::Sprite(class Sdl * sdl, const std::string filename) {
-	SDL_Surface * surface = SDL_LoadBMP(filename.c_str());
+	SDL_Surface * surface = IMG_Load(filename.c_str());
 	if(surface == NULL)
-		sdl->error(filename + ": unable to load bmp file");
+		sdl->error(filename + ": unable to load file");
 	this->texture = SDL_CreateTextureFromSurface(sdl->get_renderer(), surface);
 	if(texture == NULL)
 		sdl->error(filename + ": unable to create texture from surface");
