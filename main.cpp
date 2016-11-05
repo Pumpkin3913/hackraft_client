@@ -151,6 +151,9 @@ void main_bis(std::string conf_filename) {
 				* conf->get_int("tileset_width")), // x_shift
 			0); // y_shift
 
+	int movement_cooldown_max_frame = 10;
+	int movement_cooldown_current = 0;
+
 	class Socket * socket = NULL;
 	class Grid * grid = NULL;
 	int tileset_width = conf->get_int("tileset_width");
@@ -237,18 +240,32 @@ void main_bis(std::string conf_filename) {
 
 		sdl->next_frame();
 
+		// Process Movement.
+		if(movement_cooldown_current > 0) {
+			movement_cooldown_current--;
+		}
+		if(movement_cooldown_current == 0
+			and not sdl->key(SDL_SCANCODE_LSHIFT)
+			and not sdl->key(SDL_SCANCODE_RSHIFT)
+		) {
+			for(int i=0; i<4; i++) {
+				if(sdl->key(key_arrow[i])) {
+					socket->send("move "+direction[i]+"\n");
+					movement_cooldown_current = movement_cooldown_max_frame;
+					break;
+				}
+			}
+		}
+
 		// Process Keyboard Input.
 
 		for(char c : sdl->get_text()) {
 			textarea->add_char(sdl, font, c);
 		}
-		for(int i=0; i<4; i++) {
-			if(sdl->keydown(key_arrow[i])) {
-				if(sdl->key(SDL_SCANCODE_LSHIFT)
-						|| sdl->key(SDL_SCANCODE_RSHIFT)) {
+		if(sdl->key(SDL_SCANCODE_LSHIFT) || sdl->key(SDL_SCANCODE_RSHIFT)) {
+			for(int i=0; i<4; i++) {
+				if(sdl->keydown(key_arrow[i])) {
 					textarea->add_string(sdl, font, direction[i]);
-				} else {
-					socket->send("move "+direction[i]+"\n");
 				}
 			}
 		}
