@@ -1,17 +1,16 @@
-address = "91.224.149.43"
-port    = 443
-
--- address = "127.0.0.1"
--- port    = 31337
+address = "127.0.0.1"
+port    = 31337
 
 screen_width  = 800
 screen_height = 600
 
--- tileset_filename = "data/ascii.bmp"
--- tileset_width    = 10
--- tileset_height   = 10
-
-tileset = {"data/redruins.bmp", "data/violetcastle.bmp", "data/bluescifi.bmp"}
+tileset = {
+	"data/base.png",
+	"data/bluesunken.png", "data/bluesunken_extra.png",
+	"data/redruins.png", "data/redruins_extra.png",
+	"data/violetcastle.png", "data/violetcastle_extra.png",
+	"data/volcano.png", "data/volcano_extra.png"
+}
 tileset_width    = 20
 tileset_height   = 20
 
@@ -34,10 +33,10 @@ icon  = ""
 -- icon  = "icon.bmp"
 title = "HacKraft Client"
 
-F1  = "/look "
+F1  = "/read"
 F2  = "/open "
 F3  = "/close "
-F4  = "/damn"
+F4  = ""
 F5  = ""
 F6  = ""
 F7  = ""
