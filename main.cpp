@@ -417,7 +417,7 @@ void main_bis(std::string conf_filename) {
 				}
 				output.pop_back(); // remove trailing ' '.
 				console->add_line(sdl, font, output);
-			} else if(tokens[0] == "tilechange") {
+			} else if(tokens[0] == "floorchange") {
 				if(tokens.size() >= 4) {
 					int aspect, x, y;
 					aspect = std::stoi(tokens[1]);
