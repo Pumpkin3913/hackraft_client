@@ -259,9 +259,7 @@ void main_bis(std::string conf_filename) {
 
 		// Process Keyboard Input.
 
-		for(char c : sdl->get_text()) {
-			textarea->add_char(sdl, font, c);
-		}
+		textarea->add_string(sdl, font, sdl->get_text());
 		if(sdl->key(SDL_SCANCODE_LSHIFT) || sdl->key(SDL_SCANCODE_RSHIFT)) {
 			for(int i=0; i<4; i++) {
 				if(sdl->keydown(key_arrow[i])) {

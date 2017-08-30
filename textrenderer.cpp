@@ -30,8 +30,9 @@ class Sprite * TextRenderer::render(class Sdl * sdl, std::string message) {
     SDL_Surface * surface;
 	class Sprite * sprite;
 
-	surface = TTF_RenderText_Blended(this->font, message.c_str(), this->color);
-	if(!surface) sdl->error_ttf("Unable to render text");
+	surface = TTF_RenderUTF8_Blended(this->font, message.c_str(), this->color);
+	// if(!surface) sdl->error_ttf("Unable to render text");
+	if(!surface) return(nullptr);
 	sprite = new Sprite(sdl, surface);
 	SDL_FreeSurface(surface);
 	return(sprite);

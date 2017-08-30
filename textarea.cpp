@@ -25,15 +25,11 @@ TextArea::~TextArea() {
 	}
 }
 
-void TextArea::add_char(class Sdl * sdl, class TextRenderer * tr, char c) {
-	this->content.push_back(tr->render(sdl, std::string()+c));
-	this->text.push_back(c);
-}
-
 void TextArea::add_string(class Sdl * sdl, class TextRenderer * tr, std::string string) {
-	for(char c : string) {
-		this->add_char(sdl, tr, c);
-	}
+	auto* rendered = tr->render(sdl, string);
+	if(rendered == nullptr) return;
+	this->content.push_back(rendered);
+	this->text += string;
 }
 
 void TextArea::pop_char() {

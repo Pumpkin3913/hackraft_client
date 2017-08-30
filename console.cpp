@@ -29,6 +29,7 @@ Console::~Console() {
 }
 
 void Console::add(class Sprite * line) {
+	if(line == nullptr) return;
 	if(this->content.size() >= this->max_line) {
 		this->content.pop_back();
 	}
