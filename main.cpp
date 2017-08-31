@@ -8,6 +8,7 @@
 #include "console.h"
 #include "textarea.h"
 #include "gauge.h"
+#include "sprite.h"
 
 #include <SDL2/SDL.h>
 #include <iostream>
@@ -156,6 +157,7 @@ void main_bis(std::string conf_filename) {
 
 	class Socket * socket = NULL;
 	class Grid * grid = NULL;
+	class Sprite * zone_name = NULL;
 	int tileset_width = conf->get_int("tileset_width");
 	int tileset_height = conf->get_int("tileset_height");
 	int inventory_width = conf->get_int("inventory_width");
@@ -218,6 +220,9 @@ void main_bis(std::string conf_filename) {
 		// Draw UI.
 		console->draw(sdl);
 		textarea->draw(sdl);
+		if(zone_name != NULL) {
+			zone_name->draw(sdl, sdl->get_width()  - zone_name->get_width()  - 10, 10);
+		}
 		int i = 0;
 		for(std::pair<std::string, class Gauge *> it : gauges) {
 			it.second->draw(sdl, inventory_width * tileset_width, i);
@@ -383,7 +388,10 @@ void main_bis(std::string conf_filename) {
 						window->set_center(x, y);
 					} catch(...) { }
 				}
-			} else if(tokens[0] == "floor") {
+			} else if(tokens[0] == "zonename") {
+				if(zone_name) delete(zone_name);
+				zone_name = font->render(sdl, input.substr(8));
+			} else if(tokens[0] == "zone") {
 				if(tokens.size() >= 4) {
 					int w, h;
 					std::string name;
@@ -515,6 +523,7 @@ void main_bis(std::string conf_filename) {
 	delete(tileset);
 	delete(console);
 	delete(textarea);
+	if(zone_name) delete(zone_name);
 	delete(font);
 	delete(sdl);
 }
