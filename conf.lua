@@ -6,16 +6,16 @@ screen_height = 600
 
 tileset = {
 	"data/base.png",
-	"data/bluesunken.png", "data/bluesunken_extra.png",
-	"data/redruins.png", "data/redruins_extra.png",
-	"data/violetcastle.png", "data/violetcastle_extra.png",
-	"data/volcano.png", "data/volcano_extra.png"
+	"data/redruins.png",
+	"data/violetcastle.png",
+	"data/volcano.png"
+-- 	"data/bluesunken.png"
 }
 tileset_width    = 20
 tileset_height   = 20
 
 font_filename = "data/font.ttf"
-font_height   = 20
+font_height   = 16
 font_red      = 255
 font_green    = 255
 font_blue     = 255
@@ -33,9 +33,9 @@ icon  = ""
 -- icon  = "icon.bmp"
 title = "HacKraft Client"
 
-F1  = "/read"
-F2  = "/open "
-F3  = "/close "
+F1  = "/lire"
+F2  = "/ouvrir "
+F3  = "/fermer "
 F4  = ""
 F5  = ""
 F6  = ""
