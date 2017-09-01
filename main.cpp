@@ -273,7 +273,8 @@ void main_bis(std::string conf_filename) {
 			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_BACKSPACE)) {
-			textarea->pop_char();
+			textarea->clear();
+			// textarea->pop_char();
 		}
 		if(sdl->keydown(SDL_SCANCODE_RETURN)) {
 			std::string input = textarea->get_text();
