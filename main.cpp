@@ -131,9 +131,6 @@ void main_bis(std::string conf_filename) {
 					/ conf->get_int("tileset_height"),
 			conf->get_int("tileset_width"),
 			conf->get_int("tileset_height"));
-	try {
-		window->set_zoom(conf->get_float("zoom"));
-	} catch(...) { }
 	class Grid * inventory_gui = new Grid(
 			conf->get_int("inventory_width"),
 			(conf->get_int("screen_height")
@@ -165,6 +162,11 @@ void main_bis(std::string conf_filename) {
 	int tileset_height = conf->get_int("tileset_height");
 	int inventory_width = conf->get_int("inventory_width");
 	int pickuplist_width = conf->get_int("pickuplist_width");
+	float zoom = 1.0;
+	try {
+		zoom = conf->get_float("zoom");
+		window->set_zoom(zoom);
+	} catch(...) { }
 
 	for(std::string filename : conf->get_strings("tileset")) {
 		tileset->append(sdl, filename);
@@ -348,6 +350,25 @@ void main_bis(std::string conf_filename) {
 					socket->send(command+" "+std::to_string(item->id)+"\n");
 				}
 			}
+		}
+
+		// Process Wheel Input.
+		for(struct Wheel wheel : sdl->get_wheels()) {
+			if(wheel.y > 0) {
+				window->set_zoom(2.0);
+			} else {
+				window->set_zoom(1.0);
+			}
+
+			/*
+			zoom += wheel.y * 0.1;
+			if(zoom < 0.1) {
+				zoom = 0.1;
+			} else if(zoom > 2.0) {
+				zoom = 2.0;
+			}
+			window->set_zoom(zoom);
+			*/
 		}
 
 		// Process Server Input.

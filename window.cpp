@@ -35,10 +35,10 @@ void Window::set_center(int x_center, int y_center) {
 void Window::draw(class Sdl * sdl, class Grid * grid, class Tileset * ts) {
 	class Sprite * sprite;
 
-	int top = this->y_center - this->height/2;
-	int left = this->x_center - this->width/2;
-	int bot = top + this->height;
-	int right = left + this->width;
+	int top = this->y_center - this->height/2 / zoom;
+	int left = this->x_center - this->width/2 / zoom;
+	int bot = top + this->height / zoom;
+	int right = left + this->width / zoom;
 
 	for(int y = top ; y < bot; y++) {
 		for(int x = left; x < right; x++) {

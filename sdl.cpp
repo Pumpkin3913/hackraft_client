@@ -6,7 +6,11 @@
 #include <cstdlib>
 #include <SDL2/SDL_image.h>
 
-Sdl::Sdl(unsigned int width, unsigned int height) :
+Sdl::Sdl(
+	unsigned int width,
+	unsigned int height,
+	Uint32 frame_duration
+) :
 	window(NULL),
 	renderer(NULL),
 	keyboard(NULL),
@@ -14,6 +18,8 @@ Sdl::Sdl(unsigned int width, unsigned int height) :
 	width(width),
 	height(height),
 	quit(false),
+	frame_duration(frame_duration),
+	last_frame_ticks(0),
 	scancodes(),
 	sprites()
 {
@@ -108,6 +114,14 @@ SDL_Renderer * Sdl::get_renderer() {
 	return(this->renderer);
 }
 
+int Sdl::get_mouse_x() {
+	return(this->mouse_x);
+}
+
+int Sdl::get_mouse_y() {
+	return(this->mouse_y);
+}
+
 void Sdl::set_icon(std::string filename) {
 	SDL_Surface* icon = IMG_Load(filename.c_str());
 	if(!icon)
@@ -126,12 +140,19 @@ void Sdl::next_frame() {
 	SDL_RenderPresent(this->renderer);
 	SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 255);
 	SDL_RenderClear(this->renderer);
-	SDL_Delay(10);
+
+	Uint32 that_frame_duration = SDL_GetTicks() - this->last_frame_ticks;
+	if(that_frame_duration < this->frame_duration) {
+		SDL_Delay(this->frame_duration - that_frame_duration);
+	}
+	this->last_frame_ticks = SDL_GetTicks();
 
 	this->scancodes.clear();
 	this->clics.clear();
+	this->wheels.clear();
 	this->text_input = "";
 	// this->quit = false;
+
 	while(SDL_PollEvent(&event)) {
 		if(event.type == SDL_KEYDOWN) {
 			this->scancodes.push_back(event.key.keysym.scancode);
@@ -140,10 +161,20 @@ void Sdl::next_frame() {
 		} else if(event.type == SDL_MOUSEBUTTONDOWN) {
 			this->clics.push_back(
 				Clic(event.button.x, event.button.y, event.button.button));
+		} else if(event.type == SDL_MOUSEWHEEL) {
+			int x = event.wheel.x;
+			int y = event.wheel.y;
+			if(event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
+				x *= -1;
+				y *= -1;
+			}
+			this->wheels.push_back(Wheel{x, y});
 		} else if(event.type == SDL_QUIT) {
 			this->quit = true;
 		}
 	}
+
+	SDL_GetMouseState(&this->mouse_x, &this->mouse_y);
 }
 
 bool Sdl::key(SDL_Scancode key) {
@@ -163,12 +194,20 @@ bool Sdl::keydown(SDL_Scancode key) {
 	return(false);
 }
 
+bool Sdl::any_keydown() {
+	return(not this->scancodes.empty());
+}
+
 std::string Sdl::get_text() {
 	return(this->text_input);
 }
 
 std::list<struct Clic> Sdl::get_clics() {
 	return(this->clics);
+}
+
+std::list<struct Wheel> Sdl::get_wheels() {
+	return(this->wheels);
 }
 
 bool Sdl::has_quit() {
