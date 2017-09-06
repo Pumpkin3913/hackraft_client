@@ -16,6 +16,7 @@ class Window {
 		int y_shift; // px
 		int x_center; // tile
 		int y_center; // tile
+		float zoom;
 	public:
 		Window(
 			unsigned int width, // tiles
@@ -31,6 +32,7 @@ class Window {
 		void draw(class Sdl * sdl, class Grid * grid, class Tileset * ts);
 		void draw(class Sdl * sdl, class Sprite * sprite, int x, int y);
 		void draw(class Sdl * sdl, int id, class Tileset * ts, int x, int y);
+		void set_zoom(float zoom);
 };
 
 #endif

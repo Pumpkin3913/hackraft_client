@@ -22,7 +22,8 @@ Window::Window(
 	x_shift(x_shift),
 	y_shift(y_shift),
 	x_center(x_center),
-	y_center(y_center)
+	y_center(y_center),
+	zoom(1.0)
 {
 }
 
@@ -50,14 +51,18 @@ void Window::draw(class Sdl * sdl, class Grid * grid, class Tileset * ts) {
 }
 
 void Window::draw(class Sdl * sdl, class Sprite * sprite, int x, int y) {
-	int top = this->y_center - this->height/2;
-	int left = this->x_center - this->width/2;
+	int top = this->y_center - this->height/2 / zoom;
+	int left = this->x_center - this->width/2 / zoom;
 	sprite->draw(sdl,
-		(x-left)*this->tile_width + this->x_shift,
-		(y-top)*this->tile_height + this->y_shift);
+		(x-left)*this->tile_width*zoom + this->x_shift,
+		(y-top)*this->tile_height*zoom + this->y_shift,
+		zoom);
 }
 
 void Window::draw(class Sdl * sdl, int id, class Tileset * ts, int x, int y) {
 	this->draw(sdl, ts->get(id), x, y);
 }
 
+void Window::set_zoom(float zoom) {
+	this->zoom = zoom;
+}

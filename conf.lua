@@ -33,6 +33,8 @@ icon  = ""
 -- icon  = "icon.bmp"
 title = "HacKraft Client"
 
+-- zoom = 2.0
+
 F1  = "/lire"
 F2  = "/ouvrir "
 F3  = "/fermer "

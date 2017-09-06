@@ -131,6 +131,9 @@ void main_bis(std::string conf_filename) {
 					/ conf->get_int("tileset_height"),
 			conf->get_int("tileset_width"),
 			conf->get_int("tileset_height"));
+	try {
+		window->set_zoom(conf->get_float("zoom"));
+	} catch(...) { }
 	class Grid * inventory_gui = new Grid(
 			conf->get_int("inventory_width"),
 			(conf->get_int("screen_height")

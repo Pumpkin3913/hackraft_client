@@ -36,10 +36,10 @@ unsigned int Sprite::get_height() {
 	return(this->h);
 }
 
-void Sprite::draw(class Sdl * sdl, int x, int y) {
+void Sprite::draw(class Sdl * sdl, int x, int y, float zoom) {
 	SDL_Rect rect;
-	rect.w = this->w;
-	rect.h = this->h;
+	rect.w = this->w * zoom;
+	rect.h = this->h * zoom;
 	rect.x = x;
 	rect.y = y;
 	SDL_RenderCopy(sdl->get_renderer(), this->texture, NULL, &rect);

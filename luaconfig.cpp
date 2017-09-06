@@ -28,6 +28,18 @@ int LuaConfig::get_int(std::string varname) {
 	}
 }
 
+float LuaConfig::get_float(std::string varname) {
+	lua_getglobal(this->lua, varname.c_str());
+	if(!lua_isnumber(this->lua, -1)) {
+		lua_pop(this->lua, 1);
+		throw varname + " is not a number.";
+	} else {
+		float f = lua_tonumber(this->lua, -1);
+		lua_pop(this->lua, 1);
+		return(f);
+	}
+}
+
 std::string LuaConfig::get_string(std::string varname) {
 	lua_getglobal(this->lua, varname.c_str());
 	if(!lua_isstring(this->lua, -1)) {
