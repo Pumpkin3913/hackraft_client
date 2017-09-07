@@ -32,6 +32,13 @@ struct Item {
 		id(id), aspect(aspect) { }
 };
 
+struct Hint {
+	std::string msg;
+	int aspect;
+	Hint(std::string msg, int aspect) :
+		msg(msg), aspect(aspect) { }
+};
+
 std::vector<std::string> split(std::string input, char delim) {
 	std::vector<std::string> output;
 	int begin = 0;
@@ -65,6 +72,7 @@ void main_bis(std::string conf_filename) {
 	std::map<std::pair<int,int>,int> floorObjects;
 	std::vector<struct Item> inventory;
 	std::vector<struct Item> pickuplist;
+	std::vector<struct Hint> hints;
 	std::vector<std::string> macros = std::vector<std::string>(12, "");
 	const SDL_Scancode key_fn[] = {
 		SDL_SCANCODE_F1,
@@ -234,10 +242,19 @@ void main_bis(std::string conf_filename) {
 			i += it.second->getHeight();
 		}
 		i = 0;
+		/*
 		for(struct Item item : inventory) {
 			inventory_gui->draw(sdl, tileset,
 				i % inventory_width, i / inventory_width,
 				item.aspect);
+			i++;
+		}
+		i = 0;
+		*/
+		for(struct Hint hint : hints) {
+			inventory_gui->draw(sdl, tileset,
+				i % inventory_width, i / inventory_width,
+				hint.aspect);
 			i++;
 		}
 		i = 0;
@@ -317,6 +334,21 @@ void main_bis(std::string conf_filename) {
 
 		// Process Mouse Input.
 		for(struct Clic clic : sdl->get_clics()) {
+			if(inventory_gui->is_clic_in(clic.x, clic.y)) {
+				int hintx = inventory_gui->get_clic_x(clic.x);
+				int hinty = inventory_gui->get_clic_y(clic.y);
+				try {
+					struct Hint * hint = &(hints.at(hinty * inventory_width + hintx));
+					if(clic.button == SDL_BUTTON_LEFT) {
+						// Add hint to console.
+						textarea->add_string(sdl, font, hint->msg);
+					} else if(clic.button == SDL_BUTTON_RIGHT) {
+						// Remove hint.
+						hints.erase(hints.begin() + hinty * inventory_width + hintx);
+					}
+				} catch(...) {}
+			}
+			/*
 			int objx, objy;
 			std::string command;
 			int gui_width;
@@ -350,6 +382,7 @@ void main_bis(std::string conf_filename) {
 					socket->send(command+" "+std::to_string(item->id)+"\n");
 				}
 			}
+			*/
 		}
 
 		// Process Wheel Input.
@@ -530,6 +563,16 @@ void main_bis(std::string conf_filename) {
 							break;
 						}
 					}
+				}
+			} else if(tokens[0] == "hint") {
+				if(tokens.size() >= 2) {
+					int aspect = std::stoi(tokens[1]);
+					std::string hint {};
+					for(int i=2; i<tokens.size(); i++) {
+						hint += tokens[i] + ' ';
+					}
+					hint.pop_back(); // remove trailing ' '.
+					hints.push_back(Hint(hint, aspect));
 				}
 			} else if(tokens[0] == "EOF") {
 				console->add_line(sdl, font, "DISCONNECTED");
