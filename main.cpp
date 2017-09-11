@@ -286,17 +286,16 @@ void main_bis(std::string conf_filename) {
 
 		// Process Keyboard Input.
 
-		textarea->add_string(sdl, font, sdl->get_text());
+		textarea->add_string(sdl, sdl->get_text());
 		if(sdl->key(SDL_SCANCODE_LSHIFT) || sdl->key(SDL_SCANCODE_RSHIFT)) {
 			for(int i=0; i<4; i++) {
 				if(sdl->keydown(key_arrow[i])) {
-					textarea->add_string(sdl, font, direction[i]);
+					textarea->add_string(sdl, direction[i]);
 				}
 			}
 		}
 		if(sdl->keydown(SDL_SCANCODE_BACKSPACE)) {
-			textarea->clear();
-			// textarea->pop_char();
+			textarea->pop_char(sdl);
 		}
 		if(sdl->keydown(SDL_SCANCODE_RETURN)) {
 			std::string input = textarea->get_text();
@@ -315,7 +314,7 @@ void main_bis(std::string conf_filename) {
 						|| sdl->key(SDL_SCANCODE_RSHIFT)) {
 					macros[i] = textarea->get_text();
 				} else {
-					textarea->add_string(sdl, font, macros[i]);
+					textarea->add_string(sdl, macros[i]);
 				}
 			}
 		}
@@ -341,7 +340,7 @@ void main_bis(std::string conf_filename) {
 					struct Hint * hint = &(hints.at(hinty * inventory_width + hintx));
 					if(clic.button == SDL_BUTTON_LEFT) {
 						// Add hint to console.
-						textarea->add_string(sdl, font, hint->msg);
+						textarea->add_string(sdl, hint->msg);
 					} else if(clic.button == SDL_BUTTON_RIGHT) {
 						// Remove hint.
 						hints.erase(hints.begin() + hinty * inventory_width + hintx);
@@ -376,7 +375,7 @@ void main_bis(std::string conf_filename) {
 			if(item) {
 				if(clic.button == SDL_BUTTON_LEFT) {
 					// Add object's id to console.
-					textarea->add_string(sdl, font, std::to_string(item->id));
+					textarea->add_string(sdl, std::to_string(item->id));
 				} else if(clic.button == SDL_BUTTON_RIGHT) {
 					// send pickup/drop object's id.
 					socket->send(command+" "+std::to_string(item->id)+"\n");

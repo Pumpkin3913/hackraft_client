@@ -11,6 +11,7 @@ TextArea::TextArea(
 	signed int x_shift,
 	signed int y_shift
 ) :
+	tr(tr),
 	width(width),
 	height(height),
 	x_shift(x_shift),
@@ -25,18 +26,33 @@ TextArea::~TextArea() {
 	}
 }
 
-void TextArea::add_string(class Sdl * sdl, class TextRenderer * tr, std::string string) {
-	auto* rendered = tr->render(sdl, string);
+void TextArea::add_string(class Sdl * sdl, std::string string) {
+	auto* rendered = this->tr->render(sdl, string);
 	if(rendered == nullptr) return;
 	this->content.push_back(rendered);
 	this->text += string;
 }
 
-void TextArea::pop_char() {
-	if(this->content.size() > 0) {
-		this->content.pop_back();
+void TextArea::pop_char(class Sdl * sdl) {
+	unsigned int n = this->text.size();
+	char c = this->text.back();
+	while(n > 0 and (c & 0xC0) == 0x80) {
+		// "(c & 0xC0) != 0x80" is a hack to detect leading/trailing UTF-8 characters.
+		this->text.pop_back();
+		n--;
+		c = this->text.back();
+	}
+
+	if(n > 0) {
 		this->text.pop_back();
 	}
+
+	// Refresh graphical content.
+	for(auto* s : this->content) { delete(s); }
+	this->content.clear();
+	auto* sprite = this->tr->render(sdl, this->text);
+	if(sprite == nullptr) { return; }
+	this->content.push_back(sprite);
 }
 
 std::string TextArea::get_text() {

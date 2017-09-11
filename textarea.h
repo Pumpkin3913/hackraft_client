@@ -10,6 +10,7 @@ class Sprite;
 
 class TextArea {
 	private:
+		class TextRenderer * tr;
 		unsigned int width;
 		unsigned int height;
 		signed int x_shift;
@@ -25,8 +26,8 @@ class TextArea {
 			signed int x_shift = 0,
 			signed int y_shift = 0);
 		~TextArea();
-		void add_string(class Sdl * sdl, class TextRenderer * tr, std::string string);
-		void pop_char();
+		void add_string(class Sdl * sdl, std::string string);
+		void pop_char(class Sdl * sdl);
 		std::string get_text();
 		void clear();
 		void draw(class Sdl * sdl);
